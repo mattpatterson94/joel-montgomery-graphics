@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="Joel Montgomery Graphics">
+        <title>Joel Montgomery</title>
+        <link rel="author" href="humans.txt">
+		<link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/flexslider.css" type="text/css" media="screen" />
+        <link rel="icon" type="image/png" href="favicon.ico">
+    </head>
+    <body>
+        <div id="header">
+            <div id="hContent">
+                <div id="hLeft">
+                <h1 style="text-decoration: underline;"><a href="index.html">Home</a></h1>
+                </div>
+                <div id="hLogo">
+                    <ul class="nav">
+                        <a href="#start"><img src="images/hLogo.png" alt="Home"></a>
+                    </ul>
+                </div>
+                <div id="hRight">
+                <h1><a href="pages/portfolio.html">Portfolio</a></h1>
+                </div>
+            </div>
+        </div>
+        <div id="start">
+            <div id="logo">
+                <img src="images/logo.png" alt="logo">
+            </div>
+            <div id="arrow">
+                <ul class="nav">
+                    <a href="#main"><img src="images/arrow.png" alt="scroll down"></a>
+                </ul>
+            </div>
+        </div>
+        <div id="main">
+            <div id="body">
+                <h1>Joel Montgomery</h1>
+                <br><br>
+                <div class="flexslider">
+                  <ul class="slides">
+                    <li>
+                      <img src="images/cover.png" />
+                    </li>
+                    <li>
+                      <img src="images/cover2.png" />
+                    </li>
+                    <li>
+                      <img src="images/cover3.png" />
+                    </li>
+                    <li>
+                      <img src="images/cover4.png" />
+                    </li>
+                  </ul>
+                </div>
+                <br><br><br>
+                <div class="text">
+                    <p style="-webkit-columns: 100px 2; -moz-columns: 100px 2;columns: 100px 2;">
+                    what are you doing here, go away i havent updated this site in years, i only use it for the email address nowadays
+                    <br><br>
+                    You can contact me at yo@joelmontgomery.graphics
+                    </p>
+                    <br><br><br>
+                </div>
+                <br><br>
+            </div>
+        </div>
+
+        <!-- Javascript -->
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>     
+        <script src="js/jquery.flexslider-min.js"></script>
+        <script type="text/javascript" src="js/jquery.easing.1.3.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                $('ul.nav a').bind('click',function(event){
+                    var $anchor = $(this);
+                    
+                    $('html, body').stop().animate({
+                        scrollTop: $($anchor.attr('href')).offset().top
+                    }, 1500,'easeInOutExpo');
+                    event.preventDefault();
+                });
+            });
+            $(window).load(function() {
+              $('.flexslider').flexslider({
+                animation: "slide"
+              });
+            });
+        </script>
+    </body>
+</html>

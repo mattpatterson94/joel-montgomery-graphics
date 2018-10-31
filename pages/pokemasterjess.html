@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="description" content="Pokemon Master Jess">
+        <title>Pokemaster Jess</title>
+        <link rel="stylesheet" href="../css/style.css">
+        <link rel="author" href="../humans.txt">
+		<link rel=stylesheet href="../css/style.css">
+        <link rel="icon" type="image/png" href="../favicon.ico">
+    </head>
+    <body>
+        <div id="header">
+            <div id="hContent">
+                <div id="hLeft">
+                <h1><a href="../index.html">Home</a></h1>
+                </div>
+                <div id="hLogo" style="right:0;">
+                    <ul class="nav">
+                        <a href="#start"><img src="../images/hPokemasterLogo.png" alt="Home"></a>
+                    </ul>
+                </div>
+                <div id="hRight">
+                <h1 style="text-decoration: underline;"><a href="pokemasterjess.html">Pokemaster</a></h1>
+                </div>
+            </div>
+        </div>
+        <div id="start" style="background:#C1272D;">
+            <div id="logo" style="bottom:0;right:0;height:466px;width:331px;">
+                <img src="../images/pokemasterLogo.png" alt="logo">
+            </div>
+            <div id="arrow">
+                <ul class="nav">
+                    <a href="#main"><img src="../images/arrow.png" alt="scroll down"></a>
+                </ul>
+            </div>
+        </div>
+        <div id="main">
+            <div id="body">
+                <div id="text">
+                <h1>Pokemaster Jess</h1>
+                <br><br>
+                Welcome to Pokemaster Jess.
+                <br><br>
+                Freegan aesthetic keffiyeh deep v small batch fanny pack, hoodie pop-up gentrify. Disrupt cardigan Tonx lomo cornhole, Schlitz PBR small batch. Photo booth Portland Tumblr Odd Future, squid mustache four loko readymade Vice flexitarian shabby chic Pitchfork hella deep v tousled. McSweeney's cred seitan, plaid freegan YOLO typewriter vegan trust fund. Organic Godard Thundercats, single-origin coffee drinking vinegar before they sold out photo booth letterpress pour-over fingerstache farm-to-table vegan Williamsburg. Kickstarter whatever photo booth retro Brooklyn vegan. Wes Anderson Schlitz slow-carb occupy VHS.
+                <br><br>
+                Drinking vinegar flexitarian narwhal, tousled cray Shoreditch Thundercats craft beer Williamsburg Intelligentsia pickled vegan. Fixie flannel ethical butcher, keffiyeh banjo bespoke mlkshk freegan Odd Future master cleanse Godard. Crucifix pug vinyl, Bushwick butcher cred fap Echo Park. Kale chips Kickstarter Austin fanny pack Wes Anderson dreamcatcher, ennui ugh chambray 3 wolf moon selfies. IPhone McSweeney's sustainable gentrify Odd Future Truffaut. Polaroid small batch vegan, 3 wolf moon shabby chic salvia literally mlkshk Intelligentsia Pinterest. Portland flexitarian meggings, iPhone fanny pack post-ironic polaroid try-hard.
+                <br><br>
+                Pour-over aesthetic mustache, narwhal literally selfies biodiesel PBRB vinyl PBR Bushwick tilde try-hard tousled food truck. Godard tilde biodiesel literally Odd Future sriracha pug, Kickstarter hashtag paleo bicycle rights chillwave. Mumblecore cred fixie Vice hashtag, 8-bit Schlitz tousled sartorial yr Portland next level banh mi kale chips. Irony selfies wolf umami fixie. Mumblecore umami McSweeney's, selfies crucifix 3 wolf moon PBR tousled Thundercats PBR&B squid banh mi Etsy cornhole flannel. Heirloom PBR sartorial, stumptown 3 wolf moon chambray readymade Odd Future. Craft beer mlkshk mixtape, distillery leggings viral try-hard Godard fixie sustainable DIY umami Odd Future.
+                <br><br>
+                Single-origin coffee fap mumblecore, cray Godard readymade hella gluten-free skateboard jean shorts flannel wayfarers tilde Schlitz direct trade. Put a bird on it normcore heirloom yr, retro VHS asymmetrical meggings Tonx chia. Yr shabby chic DIY +1 dreamcatcher 8-bit. Authentic food truck pop-up church-key. Gluten-free synth normcore, hoodie yr narwhal craft beer slow-carb distillery whatever High Life actually. Carles drinking vinegar fashion axe, fixie heirloom Austin Godard church-key. Carles biodiesel chambray small batch banh mi four loko, fashion axe Intelligentsia meggings hella dreamcatcher.
+                </div>
+            </div>
+        </div>
+
+        <!-- Javascript -->
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>      
+        <script type="text/javascript" src="../js/jquery.easing.1.3.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                $('ul.nav a').bind('click',function(event){
+                    var $anchor = $(this);
+                    
+                    $('html, body').stop().animate({
+                        scrollTop: $($anchor.attr('href')).offset().top
+                    }, 1500,'easeInOutExpo');
+                    event.preventDefault();
+                });
+            });
+        </script>
+    </body>
+</html>

@@ -6,23 +6,10 @@
         <link rel="author" href="humans.txt">
 		<link rel="stylesheet" href="../css/style.css">
         <link rel="icon" type="image/png" href="favicon.ico">
-        <script type="text/javascript">
-            (function() {
-    var screenImage = document.getElementById('screenImage'),    //get the element
-        dir = 'https://joelmontgomery.graphics/images/screenImages/screenImage',                          //images folder
-        delayInSeconds = 2,                                     //delay in seconds
-        num = 0,                                                //start number
-        len = N;                                                //limit
-    setInterval(function(){                                     //interval changer
-        screenImage.src = dir + num+'.jpg';                      //change picture
-        num = (num === len) ? 0 : ++num;                        //reset if last image reached
-    }, delayInSeconds * 50);
-}());
-        </script>
     </head>
     <body>
         <div>
-            <img src="" id="screenImage" style="width: 100%; height: 100%; object-fit:contain;">
+            <img src="../images/screenImages/screenImage3" id="screenImage" style="width: 100%; height: 100%; object-fit:contain;">
         </div>
     </body>
 </html>

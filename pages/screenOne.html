@@ -7,19 +7,18 @@
 		<link rel="stylesheet" href="../css/style.css">
         <link rel="icon" type="image/png" href="favicon.ico">
         <script type="text/javascript">
-            var imageList = [
-  "../images/menu1.jpg",
-  "../images/menu2.jpg",
-  "../images/menu3.jpg",
-  "../images/menu4.jpg"
-]
-var index = 0;
-
-setInterval(function() {
-  document.querySelector("#screenImage").src = imageList[index];
-  index++;
-}, 5000)
-</script>
+            (function() {
+    var screenImage = document.getElementById('screenImage'),    //get the element
+        dir = '../images/screenImages',                          //images folder
+        delayInSeconds = 2,                                     //delay in seconds
+        num = 0,                                                //start number
+        len = N;                                                //limit
+    setInterval(function(){                                     //interval changer
+        screenImage.src = dir + num+'.jpg';                      //change picture
+        num = (num === len) ? 0 : ++num;                        //reset if last image reached
+    }, delayInSeconds * 50);
+}());
+        </script>
     </head>
     <body>
         <div>

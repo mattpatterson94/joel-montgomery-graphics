@@ -1,58 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-
-        .fullscreen-container {
-            position: relative;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .content {
-            color: #ffffff;
-            text-align: center;
-            font-size: 40px;
-        }
-
-        .ar-link {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .ar-link img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-    </style>
-</head>
+<html>
 <body style="background-color: black;">
 
-    <div class="fullscreen-container">
-        <div class="content">
-            <p>Monster thing</p>
-        </div>
+<div style="display:block; margin:auto; width:100%;">
+    <p style="color:#ffffff; text-align: center; font-size: 40px;">Monster thing</p>
+</div>
 
-        <a class="ar-link" rel="ar" href="donut.usdz">
-            <picture>
-                <source srcset="donut.png" media="(min-width: 600px)">
-                <img src="donut.png" alt="Monster AR" style="max-width: 100%; display: block; margin-left: auto; margin-right: auto;">
-            </picture>
-        </a>
-    </div>
-
+<div>
+    <a rel="ar" href="donut.usdz">
+        <picture>
+            <source srcset="donut.png"
+                    media="(min-width: 600px)">
+            <img src="donut.png" style="max-width:100%; display:block; margin-left:auto; margin-right:auto;">
+        </picture>
+    </a>
+</div>
 </body>
 </html>

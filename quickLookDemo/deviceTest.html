@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Experience</title>
+</head>
+<body>
+
+<script>
+    // Function to check the user's device and redirect accordingly
+    function redirectToAR() {
+        var isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        if (isiOS) {
+            // Redirect to AR Quick Look link for iOS
+            window.location.href = 'arquicklook://./donut.usdz';
+        } else {
+            // Redirect to ARCore link for Android
+            window.location.href = 'intent://ar.example.com/path/to/your/model.gltf#Intent;scheme=http;package=com.your.ar.app.package;end';
+        }
+    }
+
+    // Call the redirection function when the page loads
+    window.onload = redirectToAR;
+</script>
+
+</body>
+</html>

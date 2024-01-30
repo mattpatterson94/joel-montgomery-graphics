@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Experience</title>
 </head>
-<body>
+<body style="background-color: black;">
 
 <script>
     // Function to check the user's device and redirect accordingly
@@ -24,6 +24,20 @@
     // Call the redirection function when the page loads
     window.onload = redirectToAR;
 </script>
+<div style="display:block; margin:auto; width:100%;">
+    <p style="color:#ffffff; text-align: center; font-size: 40px;">Monster thing</p>
+</div>
 
+<div>
+    <a rel="ar" href="donut.usdz">
+        <picture>
+            <source srcset="donut.png"
+                    media="(min-width: 600px)">
+            <img src="donut.png" style="max-width:100%; display:block; margin-left:auto; margin-right:auto;">
+        </picture>
+    </a>
+</div>
+
+    
 </body>
 </html>

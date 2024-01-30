@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR Experience</title>
 </head>
-<body style="background-color: blue;">
+<body style="background-color: green;">
 
 <script>
     // Function to check the user's device and redirect accordingly
@@ -14,7 +14,7 @@
 
         if (isiOS) {
             // Redirect to AR Quick Look link for iOS
-            window.location.href = 'arquicklook://joelmontgomery.graphics/quickLookDemo/donut.usdz';
+            window.location.href = 'https://joelmontgomery.graphics/quickLookDemo/donut.usdz';
         } else {
             // Redirect to ARCore link for Android
             window.location.href = 'intent://ar.example.com/path/to/your/model.gltf#Intent;scheme=http;package=com.your.ar.app.package;end';

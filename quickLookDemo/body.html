@@ -6,10 +6,26 @@
 </div>
 
 <div>
-    <a rel="ar" href="donut.usdz">
+    <script>
+        function isiOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+
+        function launchAR() {
+            var link = document.getElementById('ar-link');
+            if (isiOS()) {
+                // iOS - use original link
+                link.href = "donut.usdz";
+            } else {
+                // Android - use ARCore intent link
+                link.href = "intent://arvr.google.com/scene-viewer/1.0?file=https://yourwebsite.com/donut.gltf&mode=ar_only";
+            }
+        }
+    </script>
+
+    <a id="ar-link" rel="ar" onclick="launchAR()">
         <picture>
-            <source srcset="pointer.jpg"
-                    media="(min-width: 600px)">
+            <source srcset="pointer.jpg" media="(min-width: 600px)">
             <img src="pointer.jpg" style="max-width:100%; display:block; margin-left:auto; margin-right:auto;">
         </picture>
     </a>

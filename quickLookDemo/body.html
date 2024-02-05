@@ -18,7 +18,7 @@
                 link.href = "donut.usdz";
             } else {
                 // Android - use ARCore intent link
-                link.href = "intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/donut-forAR-expanded.glb&title=MyWebArAsset&disable_occlusion=true&mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;";                
+                link.href = "intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/donut.glb&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=https://joelmontgomery.graphics/quickLookDemo/body.html;end";                
             }
         }
     </script>
@@ -29,32 +29,8 @@
             <img src="pointer.jpg" style="max-width:100%; display:block; margin-left:auto; margin-right:auto;">
         </picture>
     </a>
-</div>
-<div style="font-size:32px; color: white; font-weight:bold;">
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/donut.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Donut</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/donut-solo.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Donut Solo</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/quickLookDemo/donut.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Donut - Full Path</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/quickLookDemo/donut-solo.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Donut Solo - Full Path</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/quickLookDemo/donut-solo.gltf#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Donut GLTF</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/quickLookDemo/donut.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Donut - Full Path</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/quickLookDemo/cube.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Cube</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/quickLookDemo/cube.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Cube - Full Path</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/quickLookDemo/cube2.gltf#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Cube 2</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/quickLookDemo/cube2.gltf#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Cube 2 - Full Path</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=quickLookDemo/quickLookDemo/cube3.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Cube 3</a>
-    </br>
-    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/quickLookDemo/cube3.glb#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=https://developers.google.com/ar;end;">Cube 3 - Full Path</a>
-    </br>
+    <model-viewer src="https://joelmontgomery.graphics/quickLookDemo/donut.glb" alt="3D Donut" auto-rotate camera-controls ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto"></model-viewer>
+    <script type="module" src="https://unpkg.com/model-viewer"></script>
 </div>
 </body>
 </html>

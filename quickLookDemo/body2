@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="ar:android:url" content="https://joelmontgomery.graphics/quickLookDemo/body2.html">
+    <meta name="ar:ios:url" content="https://joelmontgomery.graphics/quickLookDemo/body2.html">
+    <title>AR Quick Look Demo</title>
+</head>
+<body>
+    <h1>AR Quick Look Demo</h1>
+    
+    <!-- Add a link to open the 3D object in AR -->
+    <a href="intent://arvr.google.com/scene-viewer/1.0?file=https://joelmontgomery.graphics/quickLookDemo/donut.glb&mode=ar_preferred#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;S.browser_fallback_url=https://joelmontgomery.graphics/quickLookDemo/body.html;end;">Open in AR</a>
+
+    <!-- Your 3D object viewer using Scene Viewer -->
+    <model-viewer src="https://joelmontgomery.graphics/quickLookDemo/donut.glb" alt="3D Donut" auto-rotate camera-controls ar ar-modes="webxr scene-viewer quick-look" ar-scale="auto"></model-viewer>
+
+    <!-- Include the model-viewer script -->
+    <script type="module" src="https://unpkg.com/model-viewer"></script>
+</body>
+</html>

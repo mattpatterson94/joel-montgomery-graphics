@@ -1,0 +1,26 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+<div class="modal">
+  <p class="title">Joel's Shape Mask Converter</p>
+  <div class="main">
+<div class="area" style="">
+  <label for="input" class="subtitle">Input</label>
+  <br>
+  <br>
+  <textarea id="input" rows="15" cols="40"></textarea>
+</div>
+<div class="area" style="padding-left:32px;">
+  <label for="output" class="subtitle">Output</label>
+  <br>
+  <br>
+  <textarea id="output" rows="15" cols="40"></textarea>
+</div>
+<br>
+<br>
+<div style="width:100%; float:left;">
+  <button class="button">Submit</button>
+</div>
+</div>
+</div>

@@ -1,5 +1,8 @@
 html,body {
   background-color: #2184fc;
+  background-image: url("https://assets3.thrillist.com/v1/image/2967002/1200x630/flatten;crop_down;webp=auto;jpeg_quality=70");
+  background-repeat: no-repeat, repeat;
+  background-size: 100% 100%;
   color: #ffffff;
   height:100%;
 }

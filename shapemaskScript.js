@@ -1,4 +1,20 @@
 $(document).ready(function() {
+    // Enable submit button when textarea has input
+    toggleButtonState();
+    
+    $('#input').on('input', function() {
+        toggleButtonState();
+    });
+
+    function toggleButtonState() {
+        if ($('#input').val().trim() === '') {
+            $('button').prop('disabled', true);
+        } else {
+            $('button').prop('disabled', false);
+        }
+    }
+
+    // Process SVG code
     $('button').click(function() {
         var input = $('#input').val();
         var output = $.parseHTML(input);

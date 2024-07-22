@@ -49,7 +49,7 @@ textarea {
 
 .button {
   border-radius:8px;
-  padding:10px 24px 10px 24px;
+  padding:11px 24px 9px 24px;
   font-size:16px;
   line-height:20pt;
   font-family:roboto, sans-serif;
@@ -62,12 +62,16 @@ textarea {
   cursor: pointer;
 }
 
-.button:hover {
-  background-color:#297de2 !important;
+.button:not(:disabled):hover {
+  background-color:#297de2;
 }
 
 .button:active {
-  background-color:#2473d1 !important;
+  background-color:#2473d1;
+}
+
+.button:disabled {
+  background-color: #D1D4D6;
 }
 
 .modal {

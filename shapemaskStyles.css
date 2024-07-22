@@ -1,11 +1,14 @@
+* {
+  box-sizing: border-box;
+}
+
 html,body {
   background-color: #2184fc;
-  background-image: url("https://assets3.thrillist.com/v1/image/2967002/1200x630/flatten;crop_down;webp=auto;jpeg_quality=70");
-  background-repeat: no-repeat, repeat;
-  background-size: 100% 100%;
-  color: #ffffff;
-  height:100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
 textarea {
   background-color: #ffffff;
   color: #2C2E2F;
@@ -16,28 +19,44 @@ textarea {
   font-family:roboto;
   resize:none;
 }
+
 .title {
   font-size: 20pt;
   font-family: roboto;
   color:#2c2e2f;
   margin-top:0px;
 }
+
 .subtitle {
   font-size:14pt;
   font-family: roboto;
   color: #2c2e2f;
+  line-height: 2;
 }
+
+.inputs {
+  display:flex;
+  justify-content: space-between;
+}
+
 .area {
-  overflow:hidden;
-  float:left;
-  max-width:450px;
+  width: 50%;
 }
+
+.input-area {
+  padding-right: 12px;
+}
+
+.output-area {
+  padding-left: 12px;
+}
+
 .button {
   border-radius:8px;
   padding:10px 24px 10px 24px;
   font-size:16px;
   line-height:20pt;
-  font-family:roboto;
+  font-family:roboto, sans-serif;
   font-weight:500;
   letter-spacing:0.5px;
   background-color:#3184fc;
@@ -46,23 +65,20 @@ textarea {
   border:none;
   cursor: pointer;
 }
+
 .button:hover {
   background-color:#297de2 !important;
 }
+
 .button:active {
   background-color:#2473d1 !important;
 }
+
 .modal {
   background-color:#ffffff;
   max-width:725px;
-  max-height:450px;
+  width: 100%;
   padding:32px;
   border-radius:8px;
-  margin:auto;
-  top:0;
-  bottom:0;
-  left:0;
-  right:0;
-  position:absolute;
   box-shadow: 0px 2px 4px rgba(21, 21, 22, 0.2);
 }

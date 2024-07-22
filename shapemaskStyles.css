@@ -39,10 +39,6 @@ textarea {
   justify-content: space-between;
 }
 
-.area {
-  width: 50%;
-}
-
 .input-area {
   padding-right: 12px;
 }
@@ -76,7 +72,7 @@ textarea {
 
 .modal {
   background-color:#ffffff;
-  max-width:725px;
+  max-width:780px;
   width: 100%;
   padding:32px;
   border-radius:8px;

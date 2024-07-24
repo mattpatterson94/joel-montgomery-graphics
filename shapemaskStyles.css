@@ -47,7 +47,7 @@ textarea {
   padding-left: 12px;
 }
 
-.button {
+#submit-button {
   border-radius:8px;
   padding:11px 24px 9px 24px;
   font-size:16px;
@@ -62,15 +62,15 @@ textarea {
   cursor: pointer;
 }
 
-.button:not(:disabled):hover {
+#submit-button:not(:disabled):hover {
   background-color:#297de2;
 }
 
-.button:active {
+#submit-button:active {
   background-color:#2473d1;
 }
 
-.button:disabled {
+#submit-button:disabled {
   background-color: #D1D4D6;
 }
 
@@ -81,4 +81,48 @@ textarea {
   padding:32px;
   border-radius:8px;
   box-shadow: 0px 2px 4px rgba(21, 21, 22, 0.2);
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+#copy-button {
+  border-radius:8px;
+  padding:11px 24px 9px 24px;
+  font-size:16px;
+  line-height:20pt;
+  font-family:roboto, sans-serif;
+  font-weight:500;
+  letter-spacing:0.5px;
+  background-color:#1DCDA3;
+  color:#ffffff;
+  margin-top:24px;
+  border:none;
+  cursor: pointer;
+}
+
+#copy-button:hover {
+  background-color: grey;
+}
+
+#copy-button:not(:disabled):hover {
+  background-color:#1BC29A;
+}
+
+#copy-button:active {
+  background-color:#2CD3AB;
+}
+
+#copy-button:disabled {
+  background-color: #D1D4D6;
+}
+
+#copy-button-content.clicked::after {
+ content: "Copied";
+}
+
+#copy-button-content::after {
+  content: "Copy";
 }

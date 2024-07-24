@@ -70,6 +70,12 @@ function copyOutput() {
     navigator.clipboard.writeText(copyText.value);
 
     // toggle button clicked
-    var button = document.getElementById('copy-button-content');
-    button.classList.toggle('clicked');
+    var copyButton = document.getElementById('copy-button-content');
+    copyButton.classList.toggle('clicked');
+
+    // toggle button unlclicked after delay
+    setTimeout(() => {
+        var copyButton = document.getElementById('copy-button-content');
+        copyButton.classList.toggle('clicked');
+    }, 1000); // Delay in milliseconds
   }

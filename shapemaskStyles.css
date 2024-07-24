@@ -120,7 +120,7 @@ textarea {
 }
 
 #copy-button-content.clicked::after {
- content: "Copied";
+ content: "Copied!";
 }
 
 #copy-button-content::after {

@@ -37,10 +37,14 @@ $(document).ready(function() {
         var element = document.getElementById('output-hider');
         var element2 = document.getElementById('buttons-simple');
         var element3 = document.getElementById('buttons-advanced');
+        var element4 = document.getElementById('simple-explainer');
+        var element5 = document.getElementById('advanced-explainer');
 
         element.classList.remove('advanced-toggle');
         element2.classList.add('advanced-toggle');
         element3.classList.remove('advanced-toggle');
+        element4.classList.add('advanced-toggle');
+        element5.classList.remove('advanced-toggle');
 
         toggleCopyButtonState()
     });

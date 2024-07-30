@@ -105,8 +105,8 @@ textarea {
 
 .modal {
   background-color:#ffffff;
-/*  max-width:780px;
-  width: 100%; */
+  max-width:780px;
+  width: 100%;
   padding:32px;
   border-radius:8px;
   box-shadow: 0px 2px 4px rgba(21, 21, 22, 0.2);
@@ -191,4 +191,21 @@ textarea {
 
 .fail {
   background-color: #E64826 !important;
+}
+
+.container {
+  width:100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.info {
+  margin-top: 24px;
+  color: #fff;
+  text-align: center;
+  width:100%;
+  line-height: 1.6;
+  font-family:roboto;
 }

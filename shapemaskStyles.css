@@ -164,3 +164,31 @@ textarea {
 #copy-button-content::after {
   content: "Copy";
 }
+
+#submit-button-content.clicked::after {
+  content: "Downloading";
+ }
+ 
+ #submit-button-content::after {
+   content: "Submit";
+ }
+
+ #submit-button-content.fail::after {
+  content: "Error. Check your SVG is correct";
+ }
+
+ #submit-button-2-content.clicked::after {
+  content: "Downloading";
+ }
+ 
+ #submit-button-2-content::after {
+   content: "Submit";
+ }
+
+ #submit-button-2-content.fail::after {
+  content: "Error. Check your SVG is correct";
+ }
+
+.fail {
+  background-color: #E64826 !important;
+}

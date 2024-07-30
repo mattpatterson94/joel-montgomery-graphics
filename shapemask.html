@@ -1,10 +1,11 @@
+<html lang="en">
 <head>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <link rel="stylesheet" type="text/css" href="shapemaskStyles.css">
   <link rel="icon" type="image/png" href="favicon2.ico">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
   <script src="shapemaskScript.js"></script>
 </head>
 
@@ -13,18 +14,27 @@
   <p class="title">Easil Shape Mask Converter</p>
   <div class="main">
 <div class="inputs">
-  <div class="area input-area">
-    <label for="input" class="subtitle">Input</label>
-    <textarea id="input" rows="15" cols="40" placeholder="Paste your SVG code here"></textarea>
+  <label for="input" class="subtitle">Input</label>
+  <div class="input-area">
+    <textarea id="input" rows="15" cols="98" placeholder="Paste your SVG code here"></textarea>
   </div>
-  <div class="area output-area">
-    <label for="output" class="subtitle">Output</label>
-    <textarea id="output" rows="15" cols="40"></textarea>
+  <div id="output-hider" class="advanced-toggle">
+    <label for="output" class="subtitle output-area">Output</label>
+    <div class="area output-area">
+      <textarea id="output" rows="15" cols="98"></textarea>
+    </div>
   </div>
 </div>
-<div class="buttons">
+<div id="buttons-simple" class="buttons">
   <button id="submit-button" disabled>Submit</button>
-  <button id="copy-button" disabled onclick="copyOutput()"><a id="copy-button-content"></a></button>
+  <button id="mode-switcher" class="mode-switcher">Switch to Advanced Mode</button>
+</div>
+<div id="buttons-advanced" class="buttons advanced-toggle">
+  <button id="submit-button-2" disabled>Submit</button>
+  <div class="right-buttons">
+    <button id="copy-button" disabled onclick="copyOutput()"><a id="copy-button-content"></a></button>
+    <button id="mode-switcher-2" class="mode-switcher">Switch to Simple Mode</button>
+  </div>
 </div>
 </div>
 </div>

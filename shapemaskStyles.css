@@ -174,7 +174,7 @@ textarea {
  }
 
  #submit-button-content.fail::after {
-  content: "Error. Check your SVG is correct";
+  content: "Error! Check your SVG code is correct";
  }
 
  #submit-button-2-content.clicked::after {
@@ -186,7 +186,7 @@ textarea {
  }
 
  #submit-button-2-content.fail::after {
-  content: "Error. Check your SVG is correct";
+  content: "Error! Check your SVG code is correct";
  }
 
 .fail {

@@ -10,32 +10,36 @@
 </head>
 
 <body>
-<div class="modal">
-  <p class="title">Easil Shape Mask Converter</p>
-  <div class="main">
-<div class="inputs">
-  <label for="input" class="subtitle">Input</label>
-  <div class="input-area">
-    <textarea id="input" rows="15" cols="98" placeholder="Paste your SVG code here"></textarea>
-  </div>
-  <div id="output-hider" class="advanced-toggle">
-    <label for="output" class="subtitle output-area">Output</label>
-    <div class="area output-area">
-      <textarea id="output" rows="15" cols="98"></textarea>
+<div class="container">
+  <div class="modal">
+    <p class="title">Easil Shape Mask Converter</p>
+    <div class="main">
+  <div class="inputs">
+    <label for="input" class="subtitle">Input</label>
+    <div class="input-area">
+      <textarea id="input" rows="15" cols="98" placeholder="Paste your SVG code here"></textarea>
+    </div>
+    <div id="output-hider" class="advanced-toggle">
+      <label for="output" class="subtitle output-area">Output</label>
+      <div class="area output-area">
+        <textarea id="output" rows="15" cols="98" readonly></textarea>
+      </div>
     </div>
   </div>
-</div>
-<div id="buttons-simple" class="buttons">
-  <button id="submit-button" disabled><a id="submit-button-content"></a></button>
-  <button id="mode-switcher" class="mode-switcher">Switch to Advanced Mode</button>
-</div>
-<div id="buttons-advanced" class="buttons advanced-toggle">
-  <button id="submit-button-2" disabled><a id="submit-button-2-content"></a></button>
-  <div class="right-buttons">
-    <button id="copy-button" disabled onclick="copyOutput()"><a id="copy-button-content"></a></button>
-    <button id="mode-switcher-2" class="mode-switcher">Switch to Simple Mode</button>
+  <div id="buttons-simple" class="buttons">
+    <button id="submit-button" disabled><a id="submit-button-content"></a></button>
+    <button id="mode-switcher" class="mode-switcher">Switch to Advanced Mode</button>
   </div>
-</div>
-</div>
+  <div id="buttons-advanced" class="buttons advanced-toggle">
+    <button id="submit-button-2" disabled><a id="submit-button-2-content"></a></button>
+    <div class="right-buttons">
+      <button id="copy-button" disabled onclick="copyOutput()"><a id="copy-button-content"></a></button>
+      <button id="mode-switcher-2" class="mode-switcher">Switch to Simple Mode</button>
+    </div>
+  </div>
+  </div>
+  </div>
+  <a id="simple-explainer" class="info">Paste your SVG code, hit Submit, and your processed SVG file will be automatically downloaded.</a>
+  <a id="advanced-explainer" class="info advanced-toggle">Paste your SVG code, hit Submit, and your processed SVG code will be output.<br>You can copy the code output and manually create an SVG file.</a>
 </div>
 </body>

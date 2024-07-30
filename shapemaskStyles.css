@@ -2,7 +2,7 @@
   box-sizing: border-box;
 }
 
-html,body {
+body {
   background-color: #2184fc;
   display: flex;
   justify-content: center;
@@ -34,19 +34,6 @@ textarea {
   line-height: 2;
 }
 
-.inputs {
-  display:flex;
-  justify-content: space-between;
-}
-
-.input-area {
-  padding-right: 12px;
-}
-
-.output-area {
-  padding-left: 12px;
-}
-
 #submit-button {
   border-radius:8px;
   padding:11px 24px 9px 24px;
@@ -74,6 +61,48 @@ textarea {
   background-color: #D1D4D6;
 }
 
+#submit-button-2 {
+  border-radius:8px;
+  padding:11px 24px 9px 24px;
+  font-size:16px;
+  line-height:20pt;
+  font-family:roboto, sans-serif;
+  font-weight:500;
+  letter-spacing:0.5px;
+  background-color:#3184fc;
+  color:#ffffff;
+  margin-top:24px;
+  border:none;
+  cursor: pointer;
+}
+
+#submit-button-2:not(:disabled):hover {
+  background-color:#297de2;
+}
+
+#submit-button-2:active {
+  background-color:#2473d1;
+}
+
+#submit-button-2:disabled {
+  background-color: #D1D4D6;
+}
+
+.mode-switcher {
+  border-radius:8px;
+  padding:11px 24px 9px 24px;
+  font-size:16px;
+  line-height:20pt;
+  font-family:roboto, sans-serif;
+  font-weight:500;
+  letter-spacing:0.5px;
+  background-color:#E5E8EB;
+  color:#2C2E2F;
+  margin-top:24px;
+  border:none;
+  cursor: pointer;
+}
+
 .modal {
   background-color:#ffffff;
   max-width:780px;
@@ -86,6 +115,14 @@ textarea {
 .buttons {
   display: flex;
   justify-content: space-between;
+}
+
+#output-hider {
+  margin-top: 24px;
+}
+
+.advanced-toggle {
+  display:none;
 }
 
 #copy-button {
@@ -101,6 +138,7 @@ textarea {
   margin-top:24px;
   border:none;
   cursor: pointer;
+  margin-right:12px;
 }
 
 #copy-button:hover {

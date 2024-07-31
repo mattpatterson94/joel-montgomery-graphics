@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const submitButtonContent = document.getElementById('submit-button-content');
     const submitButton = document.getElementById('submit-button');
+    const alertMessageSvg = document.getElementById('alert-message-svg-fail');
+    const alertMessageNonSvg = document.getElementById('alert-message-non-svg');
 
     // Prevent default drag behaviors
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -43,17 +45,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFiles(files) {
         if (files.length > 0) {
             const file = files[0];
-            const reader = new FileReader();
             const originalFileName = file.name;
+    
+            // Check if the file is an SVG by checking the extension and MIME type
+            const fileExtension = originalFileName.split('.').pop().toLowerCase();
+            const fileType = file.type;
+    
+            if (fileExtension !== 'svg' || fileType !== 'image/svg+xml') {
+                alertMessageNonSvg.classList.remove('advanced-toggle');
+                console.log('failed')
 
+                setTimeout(() => {
+                    alertMessageNonSvg.classList.add('advanced-toggle');
+                }, 3000); // Delay in milliseconds
+                console.log('Error: Only SVG files are allowed.');
+                return;
+            }
+    
+            const reader = new FileReader();
+    
             reader.onload = (e) => {
                 const svgText = e.target.result;
                 processFiles(svgText, originalFileName);
             };
-
+    
             reader.readAsText(file);
         }
     }
+    
 
     function processFiles(svgText, originalFileName) {
         let hasError = false;
@@ -107,10 +126,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 1000); // Delay in milliseconds
         } catch (error) {
             hasError = true;
-            submitButton.classList.add('fail');
+            alertMessageSvg.classList.remove('advanced-toggle');
+            console.log('failed')
 
             setTimeout(() => {
-                submitButton.classList.remove('fail');
+                alertMessageSvg.classList.add('advanced-toggle');
             }, 3000); // Delay in milliseconds
         }
     }

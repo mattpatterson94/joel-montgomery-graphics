@@ -191,6 +191,8 @@ textarea {
   width:100%;
   line-height: 1.6;
   font-family:roboto;
+  padding: 0px 24px;
+  max-width: 650px;
 }
 
 #buttons-simple {

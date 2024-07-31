@@ -1,5 +1,6 @@
 * {
   box-sizing: border-box;
+  margin: 0;
 }
 
 body {
@@ -7,6 +8,16 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
+}
+
+.container {
+  width:100%;
+  height:100vh;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
 }
 
 textarea {
@@ -25,6 +36,7 @@ textarea {
   font-family: roboto;
   color:#2c2e2f;
   margin-top:0px;
+  margin-bottom: 24px;
 }
 
 .subtitle {
@@ -172,14 +184,6 @@ textarea {
    content: "Submit";
  }
 
-.container {
-  width:100%;
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  justify-content: center;
-}
-
 .info {
   margin-top: 24px;
   color: #fff;
@@ -204,6 +208,7 @@ textarea {
   align-items: center;
   font-family: roboto;
   padding-bottom: 4px;
+  cursor: pointer;
 }
 
 #drop-area.highlight {
@@ -226,5 +231,4 @@ textarea {
   color:#E64826;
   margin-top:24px;
   border:none;
-  cursor: pointer;
 }

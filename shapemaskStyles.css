@@ -233,3 +233,18 @@ textarea {
 .extra-buttons {
   display:none;
 }
+
+.alert-message {
+  border-radius:8px;
+  padding:11px 24px 9px 8px;
+  font-size:16px;
+  line-height:20pt;
+  font-family:roboto, sans-serif;
+  font-weight:500;
+  letter-spacing:0.5px;
+  background-color:#fff;
+  color:#E64826;
+  margin-top:24px;
+  border:none;
+  cursor: pointer;
+}

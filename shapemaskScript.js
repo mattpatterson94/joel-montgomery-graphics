@@ -48,32 +48,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function handleFiles(files) {
-        if (files.length > 0) {
-            const file = files[0];
+        for (const file of files) {
             const originalFileName = file.name;
-    
+
             // Check if the file is an SVG by checking the extension and MIME type
             const fileExtension = originalFileName.split('.').pop().toLowerCase();
             const fileType = file.type;
-    
+
             if (fileExtension !== 'svg' || fileType !== 'image/svg+xml') {
                 alertMessageNonSvg.classList.remove('advanced-toggle');
-                console.log('failed')
+                console.log('failed');
 
                 setTimeout(() => {
                     alertMessageNonSvg.classList.add('advanced-toggle');
                 }, 3000); // Delay in milliseconds
                 console.log('Error: Only SVG files are allowed.');
-                return;
+                continue;
             }
-    
+
             const reader = new FileReader();
-    
+
             reader.onload = (e) => {
                 const svgText = e.target.result;
                 processFiles(svgText, originalFileName);
             };
-    
+
             reader.readAsText(file);
         }
     }
@@ -132,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             hasError = true;
             alertMessageSvg.classList.remove('advanced-toggle');
-            console.log('failed')
+            console.log('failed');
 
             setTimeout(() => {
                 alertMessageSvg.classList.add('advanced-toggle');

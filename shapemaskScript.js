@@ -237,15 +237,12 @@ $(document).ready(function() {
 
         if (!hasError) {
         } else {
-            var element1 = document.getElementById('submit-button-2');
-            var element2 = document.getElementById('submit-button-2-content');
-            element1.classList.add('fail');
-            element2.classList.add('fail');
+            var element1 = document.getElementById('alert-message-simple');
+            element1.classList.remove('advanced-toggle');
  
             // toggle button unlclicked fail after delay
             setTimeout(() => {
-                element1.classList.remove('fail');
-                element2.classList.remove('fail');
+                element1.classList.add('advanced-toggle');
             }, 3000); // Delay in milliseconds
         }
     });

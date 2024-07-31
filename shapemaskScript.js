@@ -1,3 +1,121 @@
+document.addEventListener('DOMContentLoaded', () => {
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+    const submitButtonContent = document.getElementById('submit-button-content');
+    const submitButton = document.getElementById('submit-button');
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Highlight the drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => {
+            dropArea.classList.add('highlight');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, () => {
+            dropArea.classList.remove('highlight');
+        }, false);
+    });
+
+    // Handle dropped files
+    dropArea.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        handleFiles(files);
+    });
+
+    // Handle file input change
+    fileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        handleFiles(files);
+    });
+
+    function handleFiles(files) {
+        if (files.length > 0) {
+            const file = files[0];
+            const reader = new FileReader();
+            const originalFileName = file.name;
+
+            reader.onload = (e) => {
+                const svgText = e.target.result;
+                processFiles(svgText, originalFileName);
+            };
+
+            reader.readAsText(file);
+        }
+    }
+
+    function processFiles(svgText, originalFileName) {
+        let hasError = false;
+
+        try {
+            let output = $.parseHTML(svgText);
+
+            $(output).find('clipPath').children().each(function () {
+                $(this).removeAttr('fill');
+            });
+
+            $(output).find('defs').children().unwrap();
+
+            let targetGroup = $(output).find('rect').closest('g');
+            targetGroup.attr('id', 'clip_1');
+
+            targetGroup.parent().parent().replaceWith(targetGroup);
+
+            let rect = $(output).find('rect');
+            let width = rect.attr('width');
+            let height = rect.attr('height');
+            rect.remove();
+
+            targetGroup.html('<image overflow="visible" x="0" y="0" width="' + width + '" height="' + height + '" xlink:href=""/>');
+
+            let outputHTML = $(output)
+                .find('g')
+                .parent()
+                .prop('outerHTML')
+                .replaceAll('image', 'image')
+                .replaceAll('/image>', '/image></g>')
+                .replaceAll('<clipPath', '<g><clipPath');
+
+            // Modify the original filename to append "-processed"
+            const baseName = originalFileName.replace(/\.[^/.]+$/, ""); // Remove file extension
+            const processedFileName = `${baseName}-processed.svg`;
+
+            // Create a Blob and a download link
+            const blob = new Blob([outputHTML], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = processedFileName;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            submitButtonContent.classList.toggle('clicked');
+
+            setTimeout(() => {
+                submitButtonContent.classList.toggle('clicked');
+            }, 1000); // Delay in milliseconds
+        } catch (error) {
+            hasError = true;
+            submitButton.classList.add('fail');
+
+            setTimeout(() => {
+                submitButton.classList.remove('fail');
+            }, 3000); // Delay in milliseconds
+        }
+    }
+});
+
 $(document).ready(function() {
     // Initial button state based on textarea content
     toggleButtonState();
@@ -29,102 +147,43 @@ $(document).ready(function() {
         } else {
             $('#copy-button').prop('disabled', false);
         }
-        console.log('hello')
     }
 
     // Function to toggle advanced mode
     $('#mode-switcher').click(function() {
-        var element = document.getElementById('output-hider');
+        var element = document.getElementById('inputs-hider');
         var element2 = document.getElementById('buttons-simple');
         var element3 = document.getElementById('buttons-advanced');
         var element4 = document.getElementById('simple-explainer');
         var element5 = document.getElementById('advanced-explainer');
+        var element6 = document.getElementById('upload-hider');
 
         element.classList.remove('advanced-toggle');
         element2.classList.add('advanced-toggle');
         element3.classList.remove('advanced-toggle');
         element4.classList.add('advanced-toggle');
         element5.classList.remove('advanced-toggle');
+        element6.classList.add('advanced-toggle');
 
         toggleCopyButtonState()
     });
 
     $('#mode-switcher-2').click(function() {
-        var element = document.getElementById('output-hider');
+        var element = document.getElementById('inputs-hider');
         var element2 = document.getElementById('buttons-simple');
         var element3 = document.getElementById('buttons-advanced');
         var element4 = document.getElementById('simple-explainer');
         var element5 = document.getElementById('advanced-explainer');
+        var element6 = document.getElementById('upload-hider');
 
         element.classList.add('advanced-toggle');
         element2.classList.remove('advanced-toggle');
         element3.classList.add('advanced-toggle');
         element4.classList.remove('advanced-toggle');
         element5.classList.add('advanced-toggle');
+        element6.classList.remove('advanced-toggle');
     });
 
-
-
-    // Existing click event listener for the button
-    $('#submit-button').click(function() {
-        var hasError = false;
-
-        try {
-            var input = $('#input').val();
-            var output = $.parseHTML(input);
-        
-            var defs = $(output).find('defs');
-        
-            $(output).find('clipPath').html(defs.html());
-            $(output).find('clipPath').attr("id", "SVGID_2_");
-            $(output).find('defs').remove();
-            var rect =  $(output).find('g').find('rect');
-            var width = rect.attr('width');
-            var height = rect.attr('height');
-            $(output).find('g').find('rect').remove();
-            $(output).find('g').append('<g id="clip_1" clip-path="url(#SVGID_2_)"></g>')
-            $(output).find('g').find('g').html('<image1 overflow="visible" x="0" y="0" width="'+width+'" height="'+height+'" xlink:href=""/>');
-            var outputHTML = $(output)
-                .find('g')
-                .parent()
-                .prop('outerHTML')
-                .replaceAll('image1', 'image');
-            $('#output').val(outputHTML);
-        } catch (error) {
-            hasError = true;
-        }
-
-        if (!hasError) {
-            // toggle button clicked
-            var submitButton = document.getElementById('submit-button-content');
-            submitButton.classList.toggle('clicked');
-            
-            var blob = new Blob([$('#output').val()], {type: 'image/svg+xml'});
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = 'processed.svg';
-            a.click();
-            URL.revokeObjectURL(url);
-
-            // toggle button unlclicked after delay
-            setTimeout(() => {
-                var submitButton = document.getElementById('submit-button-content');
-                submitButton.classList.toggle('clicked');
-            }, 1000); // Delay in milliseconds
-        } else {
-            var element1 = document.getElementById('submit-button');
-            var element2 = document.getElementById('submit-button-content');
-            element1.classList.add('fail');
-            element2.classList.add('fail');
- 
-            // toggle button unlclicked fail after delay
-            setTimeout(() => {
-                element1.classList.remove('fail');
-                element2.classList.remove('fail');
-            }, 3000); // Delay in milliseconds
-        }
-    });
 
     // Function for Advanced Submit button
     $('#submit-button-2').click(function() {
@@ -151,6 +210,7 @@ $(document).ready(function() {
                 .prop('outerHTML')
                 .replaceAll('image1', 'image');
             $('#output').val(outputHTML);
+            toggleCopyButtonState();
         } catch (error) {
             hasError = true;
         }

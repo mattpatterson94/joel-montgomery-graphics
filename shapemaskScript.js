@@ -42,6 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
         handleFiles(files);
     });
 
+    // Trigger file input when clicking the drop area
+    dropArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
     function handleFiles(files) {
         if (files.length > 0) {
             const file = files[0];

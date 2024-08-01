@@ -234,3 +234,14 @@ textarea {
   margin-top:24px;
   border:none;
 }
+
+.header {
+  display:flex;
+}
+
+.logo {
+  width: 24px;
+  height: 24px;
+  margin-top: 4px;
+  margin-right: 12px;
+}

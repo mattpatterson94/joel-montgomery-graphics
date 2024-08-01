@@ -17,7 +17,10 @@
 <body>
 <div class="container">
   <div class="modal">
-    <p class="title">Easil Shape Mask Converter</p>
+    <header class="header">
+    <img class="logo" src="easilLogo.png"/>
+    <p class="title">Shape Mask Converter</p>
+    </header>
     <div class="main">
       <div id="upload-hider">
       <div id="drop-area" class="advanced-toggle">Click or drag to upload SVG</div>
@@ -51,13 +54,13 @@
     </div>
     <div class="right-buttons">
       <button id="copy-button" disabled onclick="copyOutput()"><a id="copy-button-content"></a></button>
-      <button id="mode-switcher-2" class="mode-switcher">Simple Mode</button>
+      <button id="mode-switcher-2" class="mode-switcher">Simple</button>
     </div>
   </div>
   </div>
   </div>
   <a id="simple-explainer" class="info">Save your .svg file directly out of Illustrator, drag it to this window and a processed version will automatically be downloaded.<br>Note that this converter currently only supports single-frame Shape Masks.</a>
-  <a id="advanced-explainer" class="info advanced-toggle">Paste your SVG code, hit Submit, and your processed SVG code will be output. You can copy the code output and manually create an SVG file.<br>Note that this converter currently only supports single-frame Shape Masks.</a>
+  <a id="advanced-explainer" class="info advanced-toggle">Paste your SVG code, Submit, and your SVG code will be processed. You can copy the code output and manually create an SVG file.<br>Note that this converter currently only supports single-frame Shape Masks.</a>
 </div>
 </body>
 </html>

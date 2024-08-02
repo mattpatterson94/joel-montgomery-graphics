@@ -50,8 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFiles(files) {
         for (const file of files) {
             const originalFileName = file.name;
-
-            // Check if the file is an SVG by checking the extension and MIME type
             const fileExtension = originalFileName.split('.').pop().toLowerCase();
             const fileType = file.type;
 
@@ -61,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 setTimeout(() => {
                     alertMessageNonSvg.classList.add('advanced-toggle');
-                }, 3000); // Delay in milliseconds
+                }, 3000);
                 console.log('Error: Only SVG files are allowed.');
                 continue;
             }
@@ -76,118 +74,144 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.readAsText(file);
         }
     }
-    
 
     function processFiles(svgText, originalFileName) {
         let hasError = false;
 
         try {
-            // Get the SVG snippet from the input textarea
-            const input = svgText;
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(svgText, 'image/svg+xml');
+            const svgElement = doc.querySelector('svg');
 
-            // Parse the input and create a DOM element
-            let parser = new DOMParser();
-            let doc = parser.parseFromString(input, "image/svg+xml");
-
-            // Find the <svg> element
-            let svgElement = doc.querySelector('svg');
-
-            if (svgElement) {
-                // Add xmlns:xlink attribute to <svg>
-                svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-
-                let layer1Group = svgElement.querySelector('g#Layer_1');
-
-                if (layer1Group) {
-                    // Extract the inner HTML of the <g> element
-                    let innerContent = layer1Group.innerHTML;
-
-                    // Replace the <g> element with <clipPath> element
-                    let clipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-                    clipPathElement.setAttribute('id', 'clippath');
-                    clipPathElement.innerHTML = innerContent;
-
-                    // Replace the original <g> with the new <clipPath>
-                    layer1Group.parentNode.replaceChild(clipPathElement, layer1Group);
-
-                    // Find the <path> or <polygon> element inside the new <clipPath>
-                    let shapeElement = clipPathElement.querySelector('path, polygon');
-                    if (shapeElement) {
-                        // Remove the 'fill' attribute
-                        shapeElement.removeAttribute('fill');
-
-                        // Get the bounding box of the element
-                        let shapeBBox = shapeElement.getBBox();
-                        let smallestX = shapeBBox.x;
-                        let smallestY = shapeBBox.y;
-                        let width = shapeBBox.width;
-                        let height = shapeBBox.height;
-
-                        // Create a new <g> element with specified properties
-                        let newGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        newGElement.setAttribute('clip-path', 'url(#clippath)');
-                        newGElement.setAttribute('id', 'clip_1');
-
-                        // Insert the new <g> element after the <clipPath> element
-                        clipPathElement.parentNode.insertBefore(newGElement, clipPathElement.nextSibling);
-
-                        // Create a new <image> element with specified properties
-                        let imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-                        imageElement.setAttribute('overflow', 'visible');
-                        imageElement.setAttribute('x', smallestX);
-                        imageElement.setAttribute('y', smallestY);
-                        imageElement.setAttribute('width', width);
-                        imageElement.setAttribute('height', height);
-                        imageElement.setAttribute('xlink:href', '');
-
-                        // Append the new <image> element inside the <g id="clip_1">
-                        newGElement.appendChild(imageElement);
-                    }
-                }
+            if (!svgElement) {
+                throw new Error('SVG element not found.');
             }
 
-            // Generate the modified SVG output
-            let serializer = new XMLSerializer();
-            let outputHTML = serializer.serializeToString(doc);
+            // Create an SVG container for accurate bounding box calculation
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.visibility = 'hidden';
+            document.body.appendChild(container);
+            container.innerHTML = svgText;
 
-            // Manually replace both opening and closing <clippath> tags with <clipPath>
-            outputHTML = outputHTML
-            .replaceAll('clippath>', 'clipPath>')
-            .replaceAll('<clippath', '<clipPath');
+            const svgContainer = container.querySelector('svg');
 
-            // Set the modified SVG into the output textarea
-            document.getElementById('output').value = outputHTML;
+            // Ensure that elements are fully rendered before calculating bbox
+            requestAnimationFrame(() => {
+                const path = svgContainer.querySelector('path');
+                const polygon = svgContainer.querySelector('polygon');
 
-        
-            // Modify the original filename to append "-processed"
-            const baseName = originalFileName.replace(/\.[^/.]+$/, ""); // Remove file extension
-            const processedFileName = `${baseName}-processed.svg`;
+                let xcoordpath, ycoordpath, widthpath, heightpath;
+                let xcoordpolygon, ycoordpolygon, widthpolygon, heightpolygon;
 
-            // Create a Blob and a download link
-            const blob = new Blob([outputHTML], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = processedFileName;
-            a.click();
-            URL.revokeObjectURL(url);
+                if (path) {
+                    const pathBbox = path.getBBox();
+                    xcoordsvg = pathBbox.x;
+                    ycoordsvg = pathBbox.y;
+                    widthsvg = pathBbox.width;
+                    heightsvg = pathBbox.height;
+                } 
 
-            submitButtonContent.classList.toggle('clicked');
+                if (polygon) {
+                    const polygonBbox = polygon.getBBox();
+                    xcoordsvg = polygonBbox.x;
+                    ycoordsvg = polygonBbox.y;
+                    widthsvg = polygonBbox.width;
+                    heightsvg = polygonBbox.height;
+                }
 
-            setTimeout(() => {
+                // Clean up container
+                document.body.removeChild(container);
+
+
+                if (svgElement) {
+                    // Add xmlns:xlink attribute to <svg>
+                    svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    
+                    let layer1Group = svgElement.querySelector('g#Layer_1');
+    
+                    if (layer1Group) {
+                        // Extract the inner HTML of the <g> element
+                        let innerContent = layer1Group.innerHTML;
+    
+                        // Replace the <g> element with <clipPath> element
+                        let clipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+                        clipPathElement.setAttribute('id', 'clippath');
+                        clipPathElement.innerHTML = innerContent;
+    
+                        // Replace the original <g> with the new <clipPath>
+                        layer1Group.parentNode.replaceChild(clipPathElement, layer1Group);
+    
+                        // Find the <path> or <polygon> element inside the new <clipPath>
+                        let shapeElement = clipPathElement.querySelector('path, polygon');
+                        if (shapeElement) {
+                            // Remove the 'fill' attribute
+                            shapeElement.removeAttribute('fill');
+    
+                            // Create a new <g> element with specified properties
+                            let newGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                            newGElement.setAttribute('clip-path', 'url(#clippath)');
+                            newGElement.setAttribute('id', 'clip_1');
+    
+                            // Insert the new <g> element after the <clipPath> element
+                            clipPathElement.parentNode.insertBefore(newGElement, clipPathElement.nextSibling);
+    
+                            // Create a new <image> element with specified properties
+                            let imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                            imageElement.setAttribute('overflow', 'visible');
+                            imageElement.setAttribute('x', xcoordsvg);
+                            imageElement.setAttribute('y', ycoordsvg);
+                            imageElement.setAttribute('width', widthsvg);
+                            imageElement.setAttribute('height', widthsvg);
+                            imageElement.setAttribute('xlink:href', '');
+    
+                            // Append the new <image> element inside the <g id="clip_1">
+                            newGElement.appendChild(imageElement);
+                        }
+                    }
+                }
+
+                // Generate the modified SVG output
+                const serializer = new XMLSerializer();
+                let outputHTML = serializer.serializeToString(doc);
+
+                // Manually replace both opening and closing <clippath> tags with <clipPath>
+                outputHTML = outputHTML
+                .replaceAll('clippath>', 'clipPath>')
+                .replaceAll('<clippath', '<clipPath');
+
+                document.getElementById('output').value = outputHTML;
+
+                // Modify the original filename to append "-processed"
+                const baseName = originalFileName.replace(/\.[^/.]+$/, ""); // Remove file extension
+                const processedFileName = `${baseName}-processed.svg`;
+
+                // Create a Blob and a download link
+                const blob = new Blob([outputHTML], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = processedFileName;
+                a.click();
+                URL.revokeObjectURL(url);
+
                 submitButtonContent.classList.toggle('clicked');
-            }, 1000); // Delay in milliseconds
+                setTimeout(() => {
+                    submitButtonContent.classList.toggle('clicked');
+                }, 1000);
+            });
+
         } catch (error) {
             hasError = true;
+            console.error('Error processing SVG:', error);
             alertMessageSvg.classList.remove('advanced-toggle');
-            console.log('failed');
-
             setTimeout(() => {
                 alertMessageSvg.classList.add('advanced-toggle');
-            }, 3000); // Delay in milliseconds
+            }, 3000);
         }
     }
 });
+
 
 $(document).ready(function() {
     // Initial button state based on textarea content

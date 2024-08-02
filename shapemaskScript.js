@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             imageElement.setAttribute('x', xcoordsvg);
                             imageElement.setAttribute('y', ycoordsvg);
                             imageElement.setAttribute('width', widthsvg);
-                            imageElement.setAttribute('height', widthsvg);
+                            imageElement.setAttribute('height', heightsvg);
                             imageElement.setAttribute('xlink:href', '');
                 
                             // Append the new <image> element inside the <g id="clip_1">
@@ -205,10 +205,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Add dimensions to SVG
                         svgElement.setAttribute('width', widthsvg);
                         svgElement.setAttribute('height', heightsvg);
+                        svgElement.setAttribute('x', '0');
+                        svgElement.setAttribute('y', '0');
                     }
                 }
                 
-
                 // Generate the modified SVG output
                 const serializer = new XMLSerializer();
                 let outputHTML = serializer.serializeToString(doc);

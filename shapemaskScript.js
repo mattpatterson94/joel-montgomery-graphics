@@ -101,8 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const path = svgContainer.querySelector('path');
                 const polygon = svgContainer.querySelector('polygon');
 
-                let xcoordpath, ycoordpath, widthpath, heightpath;
-                let xcoordpolygon, ycoordpolygon, widthpolygon, heightpolygon;
+                let xcoordsvg, ycoordsvg, widthsvg, heightsvg;
 
                 if (path) {
                     const pathBbox = path.getBBox();
@@ -125,37 +124,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
                 if (svgElement) {
-                    // Add xmlns:xlink attribute to <svg>
-                    svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-    
-                    let layer1Group = svgElement.querySelector('g#Layer_1');
-    
+                    // Remove Style Defs
+                    const defs = svgElement.querySelector('defs');
+                    let defsPresent = false;
+                    if (defs) {
+                        defsPresent = true;
+                        svgElement.removeChild(defs);
+                    }
+                
+                    let layer1Group = svgElement.querySelector('g[id]');
+                
                     if (layer1Group) {
                         // Extract the inner HTML of the <g> element
                         let innerContent = layer1Group.innerHTML;
-    
+                
                         // Replace the <g> element with <clipPath> element
                         let clipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
                         clipPathElement.setAttribute('id', 'clippath');
                         clipPathElement.innerHTML = innerContent;
-    
+                
                         // Replace the original <g> with the new <clipPath>
                         layer1Group.parentNode.replaceChild(clipPathElement, layer1Group);
-    
+                
                         // Find the <path> or <polygon> element inside the new <clipPath>
                         let shapeElement = clipPathElement.querySelector('path, polygon');
                         if (shapeElement) {
-                            // Remove the 'fill' attribute
+                            // Remove style attributes
                             shapeElement.removeAttribute('fill');
-    
+                            shapeElement.removeAttribute('class');
+                            shapeElement.removeAttribute('stroke');
+
+                
                             // Create a new <g> element with specified properties
                             let newGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                             newGElement.setAttribute('clip-path', 'url(#clippath)');
                             newGElement.setAttribute('id', 'clip_1');
-    
+                
                             // Insert the new <g> element after the <clipPath> element
                             clipPathElement.parentNode.insertBefore(newGElement, clipPathElement.nextSibling);
-    
+                
                             // Create a new <image> element with specified properties
                             let imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
                             imageElement.setAttribute('overflow', 'visible');
@@ -164,12 +171,43 @@ document.addEventListener('DOMContentLoaded', () => {
                             imageElement.setAttribute('width', widthsvg);
                             imageElement.setAttribute('height', widthsvg);
                             imageElement.setAttribute('xlink:href', '');
-    
+                
                             // Append the new <image> element inside the <g id="clip_1">
                             newGElement.appendChild(imageElement);
                         }
                     }
+
+                    // Add xmlns:xlink attribute to <svg>
+                    svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+                
+                    // Add group around <clipPath> and existing <g> if defsPresent is true
+                    if (defsPresent) {
+                        // Create a new <g> element
+                        const newGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                        // Find the <clipPath> and the existing <g> elements
+                        const clipPath = svgElement.querySelector('clipPath');
+                        const existingGroup = svgElement.querySelector('g[id]');
+                
+                        // Move the <clipPath> and existing <g> into the new <g>
+                        if (clipPath) {
+                            svgElement.removeChild(clipPath);
+                            newGroup.appendChild(clipPath);
+                        }
+                        if (existingGroup) {
+                            svgElement.removeChild(existingGroup);
+                            newGroup.appendChild(existingGroup);
+                        }
+                
+                        // Append the new <g> to the SVG element
+                        svgElement.appendChild(newGroup);
+
+                        // Add dimensions to SVG
+                        svgElement.setAttribute('width', widthsvg);
+                        svgElement.setAttribute('height', heightsvg);
+                    }
                 }
+                
 
                 // Generate the modified SVG output
                 const serializer = new XMLSerializer();
@@ -286,7 +324,7 @@ $(document).ready(function() {
     $('#submit-button-2').click(function() {
         let hasError = false;
 
-        try {
+/*         try { */
             const input = $('#input').val();
             let output = $.parseHTML(input);
         
@@ -308,9 +346,9 @@ $(document).ready(function() {
                 .replaceAll('image1', 'image');
             $('#output').val(outputHTML);
             toggleCopyButtonState();
-        } catch (error) {
+/*         } catch (error) {
             hasError = true;
-        }
+        } */
 
         if (!hasError) {
         } else {

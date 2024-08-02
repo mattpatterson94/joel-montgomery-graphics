@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function processFiles(svgText, originalFileName) {
         let hasError = false;
 
-/*         try {     */        
+        try {
             // Get the SVG snippet from the input textarea
             const input = svgText;
 
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 submitButtonContent.classList.toggle('clicked');
             }, 1000); // Delay in milliseconds
-/*         } catch (error) {
+        } catch (error) {
             hasError = true;
             alertMessageSvg.classList.remove('advanced-toggle');
             console.log('failed');
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 alertMessageSvg.classList.add('advanced-toggle');
             }, 3000); // Delay in milliseconds
-        } */
+        }
     }
 });
 

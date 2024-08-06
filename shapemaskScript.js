@@ -131,6 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         defsPresent = true;
                         svgElement.removeChild(defs);
                     }
+
+                    wrapInGroup(svgElement);
                 
                     let layer1Group = svgElement.querySelector('g[id]');
                 
@@ -249,6 +251,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 3000);
         }
     }
+
+    // Function to wrap elements in <g> if not already wrapped and assign an ID to the new <g>
+    function wrapInGroup(svgElement) {
+        const elements = svgElement.querySelectorAll('path, polygon');
+  
+        elements.forEach((element, index) => {
+          if (element.parentElement.tagName.toLowerCase() !== 'g') {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.id = `Layer_${index + 1}`;
+            element.parentNode.insertBefore(g, element);
+            g.appendChild(element);
+          }
+        });
+      }
 });
 
 

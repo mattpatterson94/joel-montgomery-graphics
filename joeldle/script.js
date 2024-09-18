@@ -85,7 +85,25 @@ function checkWord(guess) {
     if (guessLetter1 === letter1) {
         letterBox1.classList.add("correct");
         matchedLetterArray.push(1);
-    } else if (guessLetter1 === letter2) {
+    }
+    if (guessLetter2 === letter2) {
+        letterBox2.classList.add("correct");
+        matchedLetterArray.push(2);
+    }
+    if (guessLetter3 === letter3) {
+        letterBox3.classList.add("correct");
+        matchedLetterArray.push(3);
+    }
+    if (guessLetter4 === letter4) {
+        letterBox4.classList.add("correct");
+        matchedLetterArray.push(4);
+    }
+    if (guessLetter5 === letter5) {
+        letterBox5.classList.add("correct");
+        matchedLetterArray.push(5);
+    }
+
+    if (guessLetter1 === letter2) {
         matchedLetterArray.push(2);
         letterBox1.classList.add("present");
     } else if (guessLetter1 === letter3) {
@@ -99,10 +117,7 @@ function checkWord(guess) {
         letterBox1.classList.add("present");
     }
 
-    if (guessLetter2 === letter2) {
-        letterBox2.classList.add("correct");
-        matchedLetterArray.push(2);
-    } else if (guessLetter2 === letter1) {
+    if (guessLetter2 === letter1) {
         if (matchedLetterArray.includes(1)) {} else {
             letterBox2.classList.add("present");
             matchedLetterArray.push(1);
@@ -124,10 +139,8 @@ function checkWord(guess) {
         };
     }
 
-    if (guessLetter3 === letter3) {
-        letterBox3.classList.add("correct");
-        matchedLetterArray.push(3);
-    } else if (guessLetter3 === letter1) {
+    
+    if (guessLetter3 === letter1) {
         if (matchedLetterArray.includes(1)) {} else {
             letterBox3.classList.add("present");
             matchedLetterArray.push(1)
@@ -149,10 +162,8 @@ function checkWord(guess) {
         };
     }
 
-    if (guessLetter4 === letter4) {
-        letterBox4.classList.add("correct");
-        matchedLetterArray.push(4);
-    } else if (guessLetter4 === letter1) {
+    
+    if (guessLetter4 === letter1) {
         if (matchedLetterArray.includes(1)) {} else {
             letterBox4.classList.add("present");
             matchedLetterArray.push(1);
@@ -174,10 +185,8 @@ function checkWord(guess) {
         };
     }
 
-    if (guessLetter5 === letter5) {
-        letterBox5.classList.add("correct");
-        matchedLetterArray.push(5);
-    } else if (guessLetter5 === letter1) {
+
+    if (guessLetter5 === letter1) {
         if (matchedLetterArray.includes(1)) {} else {
             letterBox5.classList.add("present");
             matchedLetterArray.push(1);

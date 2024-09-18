@@ -1,4 +1,4 @@
-const grabWord = "https://words.dev-apis.com/word-of-the-day";
+let grabWord = "https://words.dev-apis.com/word-of-the-day";
 let correctWord;
 let guess;
 let guessNumber = 1;
@@ -14,6 +14,20 @@ function init() {
                 correctWord = processedResponse.word;
                 console.log(correctWord);
             })
+    let disableRow = document.getElementsByClassName("letter");
+    for (let i = 0; i < disableRow.length; i++) {
+        disableRow[i].disabled = true;
+        disableRow[i].value = '';
+        disableRow[i].classList.remove("correct");
+        disableRow[i].classList.remove("present");
+    }
+    let enableRow = document.getElementsByClassName("a1");
+    for (let i = 0; i < enableRow.length; i++) {
+        enableRow[i].disabled = false;
+        enableRow[i].value = '';
+        enableRow[i].classList.remove("correct");
+        enableRow[i].classList.remove("present");
+    }
     document.getElementById("start").focus();
 }
 
@@ -210,8 +224,7 @@ function checkWord(guess) {
 
     if (guess === correctWord) {
         endGame();
-        document.getElementById("message").innerHTML=`Solved in ${guessNumber}!`;
-
+        victory();
     } else if (guessNumber>=6) {
         console.log('out of guesses');
         endGame();
@@ -292,6 +305,43 @@ function endGame() {
         disableRow[i].disabled = true;
     }
 }
+
+function victory() {
+    document.getElementById("message").innerHTML=`Solved in ${guessNumber}!`;
+    document.getElementById("prizes").classList.remove('prizeHidden');
+}
+
+function playRandom() {
+    let grabWord = "https://words.dev-apis.com/word-of-the-day?random=1";
+    let disableRow = document.getElementsByClassName("letter");
+    for (let i = 0; i < disableRow.length; i++) {
+        disableRow[i].disabled = true;
+        disableRow[i].value = '';
+        disableRow[i].classList.remove("correct");
+        disableRow[i].classList.remove("present");
+    }
+    let enableRow = document.getElementsByClassName("a1");
+    for (let i = 0; i < enableRow.length; i++) {
+        enableRow[i].disabled = false;
+        enableRow[i].value = '';
+        enableRow[i].classList.remove("correct");
+        enableRow[i].classList.remove("present");
+    }
+    const promise = fetch(grabWord);
+    promise
+        .then(function (response) {
+            const processingPromise = response.json();
+            return processingPromise;
+        })
+            .then(function (processedResponse) {
+                correctWord = processedResponse.word;
+                console.log(correctWord);
+            })
+    guessNumber = 1;
+    document.getElementById("prizes").classList.add('prizeHidden');
+    document.getElementById("start").focus();
+}
+
 
 init();
 

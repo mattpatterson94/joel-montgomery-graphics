@@ -51,3 +51,7 @@ header {
     color:black;
     margin-bottom:12px;
 }
+
+.prizeHidden {
+    display:none;
+}

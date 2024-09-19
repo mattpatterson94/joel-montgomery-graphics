@@ -45,9 +45,7 @@ function prepareGuess(guessNumber) {
     });
     guess = guess.toLowerCase();
     
-    if (guess.length < 5) {
-        console.log('too short');
-    } else {
+    if (guess.length = 5) {
         validateWord(guess);
     }
 }
@@ -228,11 +226,9 @@ function checkWord(guess) {
         endGame();
         victory();
     } else if (guessNumber>=6) {
-        console.log('out of guesses');
         endGame();
         defeat();
     } else {
-        console.log('incorrect, try again');
         guessNumber += 1;
         nextLine();
     };

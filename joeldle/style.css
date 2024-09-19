@@ -41,6 +41,10 @@ header {
     color:white;
 }
 
+.correct.present {
+    background-color: green;
+}
+
 .invalidWord {
     background-color: red;
     color:white;

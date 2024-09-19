@@ -3,7 +3,7 @@ let correctWord;
 let guess;
 let guessNumber = 1;
 let streakNumber = 0;
-let prevGuessNumber = 6;
+let prevGuessNumber = 7;
 
 function init() {
     const promise = fetch(grabWord);
@@ -348,6 +348,7 @@ function defeat() {
         document.getElementById("streak").innerHTML=``;
     }
     streakNumber = 0;
+    prevGuessNumber = 7;
 }
 
 function playRandom() {

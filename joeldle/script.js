@@ -312,7 +312,7 @@ function victory() {
 }
 
 function defeat() {
-    document.getElementById("message").innerHTML=`You lost! Today's word was ${correctWord}`;
+    document.getElementById("message").innerHTML=`You lost! The word was ${correctWord}`;
     document.getElementById("prizes").classList.remove('prizeHidden');
 }
 

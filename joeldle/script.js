@@ -228,7 +228,7 @@ function checkWord(guess) {
     } else if (guessNumber>=6) {
         console.log('out of guesses');
         endGame();
-        alert('you lose');
+        defeat();
     } else {
         console.log('incorrect, try again');
         guessNumber += 1;
@@ -311,6 +311,11 @@ function victory() {
     document.getElementById("prizes").classList.remove('prizeHidden');
 }
 
+function defeat() {
+    document.getElementById("message").innerHTML=`You lost! Today's word was ${correctWord}`;
+    document.getElementById("prizes").classList.remove('prizeHidden');
+}
+
 function playRandom() {
     let grabWord = "https://words.dev-apis.com/word-of-the-day?random=1";
     let disableRow = document.getElementsByClassName("letter");
@@ -338,6 +343,7 @@ function playRandom() {
                 console.log(correctWord);
             })
     guessNumber = 1;
+    document.getElementById("message").innerHTML=`Playing a random word`;
     document.getElementById("prizes").classList.add('prizeHidden');
     document.getElementById("start").focus();
 }

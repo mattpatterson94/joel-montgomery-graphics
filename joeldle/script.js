@@ -3,6 +3,7 @@ let correctWord;
 let guess;
 let guessNumber = 1;
 let streakNumber = 0;
+let prevGuessNumber = 6;
 
 function init() {
     const promise = fetch(grabWord);
@@ -309,10 +310,13 @@ function endGame() {
 
 function victory() {
     streakNumber += 1;
+
     document.getElementById("message").innerHTML=`Solved in ${guessNumber}!`;
     document.getElementById("prizes").classList.remove('prizeHidden');
 
-    if (streakNumber > 1 && streakNumber < 3) {
+    if (prevGuessNumber === 1 && guessNumber === 1) {
+        document.getElementById("streak").innerHTML=`Stop cheating!`;
+    } else if (streakNumber > 1 && streakNumber < 3) {
         document.getElementById("streak").innerHTML=`${streakNumber} in a row!`;
     } else if (streakNumber >= 3 && streakNumber < 4) {
         document.getElementById("streak").innerHTML=`Keep going! ${streakNumber} in a row!`;
@@ -325,6 +329,8 @@ function victory() {
     } else if (streakNumber >= 10) {
         document.getElementById("streak").innerHTML=`Great streak! ${streakNumber} in a row!`;
     }
+
+    prevGuessNumber = guessNumber;
 }
 
 function defeat() {

@@ -118,17 +118,25 @@ function checkWord(guess) {
     }
 
     if (guessLetter1 === letter2) {
-        matchedLetterArray.push(2);
-        letterBox1.classList.add("present");
+        if (matchedLetterArray.includes(2)) {} else {
+            letterBox1.classList.add("present");
+            matchedLetterArray.push(2);
+        };
     } else if (guessLetter1 === letter3) {
-        matchedLetterArray.push(3);
-        letterBox1.classList.add("present");
+        if (matchedLetterArray.includes(3)) {} else {
+            letterBox1.classList.add("present");
+            matchedLetterArray.push(3);
+        };
     } else if (guessLetter1 === letter4) {
-        matchedLetterArray.push(4);
-        letterBox1.classList.add("present");
+        if (matchedLetterArray.includes(4)) {} else {
+            letterBox1.classList.add("present");
+            matchedLetterArray.push(4);
+        };
     } else if (guessLetter1 === letter5) {
-        matchedLetterArray.push(5);
-        letterBox1.classList.add("present");
+        if (matchedLetterArray.includes(5)) {} else {
+            letterBox1.classList.add("present");
+            matchedLetterArray.push(5);
+        };
     }
 
     if (guessLetter2 === letter1) {
@@ -324,6 +332,8 @@ function victory() {
         document.getElementById("streak").innerHTML=`Wow! ${streakNumber} in a row!`;
     } else if (streakNumber >= 10) {
         document.getElementById("streak").innerHTML=`Great streak! ${streakNumber} in a row!`;
+    } else {
+        document.getElementById("streak").innerHTML=``;
     }
 
     prevGuessNumber = guessNumber;
@@ -332,6 +342,11 @@ function victory() {
 function defeat() {
     document.getElementById("message").innerHTML=`You lost! The word was ${correctWord}`;
     document.getElementById("prizes").classList.remove('prizeHidden');
+    if (streakNumber > 1) {
+        document.getElementById("streak").innerHTML=`Streak broken! You managed ${streakNumber} in a row!`;
+    } else {
+        document.getElementById("streak").innerHTML=``;
+    }
     streakNumber = 0;
 }
 
@@ -343,6 +358,7 @@ function playRandom() {
         disableRow[i].value = '';
         disableRow[i].classList.remove("correct");
         disableRow[i].classList.remove("present");
+        disableRow[i].classList.remove("invalidWord");
     }
     let enableRow = document.getElementsByClassName("a1");
     for (let i = 0; i < enableRow.length; i++) {
@@ -350,6 +366,7 @@ function playRandom() {
         enableRow[i].value = '';
         enableRow[i].classList.remove("correct");
         enableRow[i].classList.remove("present");
+        enableRow[i].classList.remove("invalidWord");
     }
     const promise = fetch(grabWord);
     promise

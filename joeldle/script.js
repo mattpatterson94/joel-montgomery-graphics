@@ -2,6 +2,7 @@ let grabWord = "https://words.dev-apis.com/word-of-the-day";
 let correctWord;
 let guess;
 let guessNumber = 1;
+let streakNumber = 0;
 
 function init() {
     const promise = fetch(grabWord);
@@ -307,13 +308,29 @@ function endGame() {
 }
 
 function victory() {
+    streakNumber += 1;
     document.getElementById("message").innerHTML=`Solved in ${guessNumber}!`;
     document.getElementById("prizes").classList.remove('prizeHidden');
+
+    if (streakNumber > 1 && streakNumber < 2) {
+        document.getElementById("streak").innerHTML=`${streakNumber} in a row!`;
+    } else if (streakNumber >= 2 && streakNumber < 3) {
+        document.getElementById("streak").innerHTML=`Keep going! ${streakNumber} in a row!`;
+    } else if (streakNumber >= 3 && streakNumber < 5) {
+        document.getElementById("streak").innerHTML=`Cool streak! ${streakNumber} in a row!`;
+    } else if (streakNumber >= 5 && streakNumber < 7) {
+        document.getElementById("streak").innerHTML=`You're smart! ${streakNumber} in a row!`;
+    } else if (streakNumber >= 7 && streakNumber < 10) {
+        document.getElementById("streak").innerHTML=`Wow! ${streakNumber} in a row!`;
+    } else if (streakNumber >= 10) {
+        document.getElementById("streak").innerHTML=`Great streak! ${streakNumber} in a row!`;
+    }
 }
 
 function defeat() {
     document.getElementById("message").innerHTML=`You lost! The word was ${correctWord}`;
     document.getElementById("prizes").classList.remove('prizeHidden');
+    streakNumber = 0;
 }
 
 function playRandom() {

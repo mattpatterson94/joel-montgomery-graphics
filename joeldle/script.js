@@ -312,11 +312,11 @@ function victory() {
     document.getElementById("message").innerHTML=`Solved in ${guessNumber}!`;
     document.getElementById("prizes").classList.remove('prizeHidden');
 
-    if (streakNumber > 1 && streakNumber < 2) {
+    if (streakNumber > 1 && streakNumber < 3) {
         document.getElementById("streak").innerHTML=`${streakNumber} in a row!`;
-    } else if (streakNumber >= 2 && streakNumber < 3) {
+    } else if (streakNumber >= 3 && streakNumber < 4) {
         document.getElementById("streak").innerHTML=`Keep going! ${streakNumber} in a row!`;
-    } else if (streakNumber >= 3 && streakNumber < 5) {
+    } else if (streakNumber >= 4 && streakNumber < 5) {
         document.getElementById("streak").innerHTML=`Cool streak! ${streakNumber} in a row!`;
     } else if (streakNumber >= 5 && streakNumber < 7) {
         document.getElementById("streak").innerHTML=`You're smart! ${streakNumber} in a row!`;

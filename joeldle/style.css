@@ -63,5 +63,5 @@ header {
 }
 
 .prizeHidden {
-    display:none;
+    visibility: hidden;
 }

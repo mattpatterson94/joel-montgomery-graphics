@@ -182,34 +182,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Add xmlns:xlink attribute to <svg>
                     svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
                 
-                    // Add group around <clipPath> and existing <g> if defsPresent is true
-                    if (defsPresent) {
-                        // Create a new <g> element
-                        const newGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                
-                        // Find the <clipPath> and the existing <g> elements
+                    // ALWAYS wrap <clipPath> and <g id="clip_1"> inside a new <g>
+                    (function() {
                         const clipPath = svgElement.querySelector('clipPath');
-                        const existingGroup = svgElement.querySelector('g[id]');
-                
-                        // Move the <clipPath> and existing <g> into the new <g>
+                        const clipGroup = svgElement.querySelector('g[id="clip_1"]');
+
+                        if (!clipPath && !clipGroup) return;
+
+                        // Create wrapper <g>
+                        const wrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
                         if (clipPath) {
                             svgElement.removeChild(clipPath);
-                            newGroup.appendChild(clipPath);
+                            wrapper.appendChild(clipPath);
                         }
-                        if (existingGroup) {
-                            svgElement.removeChild(existingGroup);
-                            newGroup.appendChild(existingGroup);
+                        if (clipGroup) {
+                            svgElement.removeChild(clipGroup);
+                            wrapper.appendChild(clipGroup);
                         }
-                
-                        // Append the new <g> to the SVG element
-                        svgElement.appendChild(newGroup);
 
-                        // Add dimensions to SVG
-                        svgElement.setAttribute('width', widthsvg);
-                        svgElement.setAttribute('height', heightsvg);
-                        svgElement.setAttribute('x', '0');
-                        svgElement.setAttribute('y', '0');
-                    }
+                        svgElement.appendChild(wrapper);
+                    })();
+
                 }
                 
                 // Generate the modified SVG output

@@ -147,57 +147,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     wrapInGroup(svgElement);
 
-                    let layer1Group = svgElement.querySelector('g[id]');
+                const originalShapeElement = svgElement.querySelector('path, polygon');
 
-                    if (layer1Group) {
-                        // Extract the inner HTML of the <g> element
-                        let innerContent = layer1Group.innerHTML;
+                if (!originalShapeElement) {
+                    throw new Error('No path or polygon found.');
+                }
 
-                        // Replace the <g> element with <clipPath> element
-                        let clipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-                        clipPathElement.setAttribute('id', 'clippath');
-                        clipPathElement.innerHTML = innerContent;
+                // Create the clipPath
+                let clipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+                clipPathElement.setAttribute('id', 'clippath');
 
-                        // Replace the original <g> with the new <clipPath>
-                        layer1Group.parentNode.replaceChild(clipPathElement, layer1Group);
+                // Clone only the actual shape, not the Illustrator wrapper groups
+                let clippedShape = originalShapeElement.cloneNode(true);
 
-                        // Find the <path> or <polygon> element inside the new <clipPath>
-                        let shapeElement = clipPathElement.querySelector('path, polygon');
+                // Remove visual/style/blend attributes from the clipped shape
+                clippedShape.removeAttribute('fill');
+                clippedShape.removeAttribute('class');
+                clippedShape.removeAttribute('stroke');
+                clippedShape.removeAttribute('style');
+                clippedShape.removeAttribute('isolation');
+                clippedShape.removeAttribute('mix-blend-mode');
 
-                        if (shapeElement) {
-                            // Remove visual/style attributes that are not needed inside the clip path
-                            shapeElement.removeAttribute('fill');
-                            shapeElement.removeAttribute('class');
-                            shapeElement.removeAttribute('stroke');
-                            shapeElement.removeAttribute('style');
+                // Add the clean shape to the clipPath
+                clipPathElement.appendChild(clippedShape);
 
-                            // Remove blend/isolation attributes from the clip path shape
-                            shapeElement.removeAttribute('isolation');
-                            shapeElement.removeAttribute('mix-blend-mode');
+                // Create the clipped image group
+                let newGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                newGElement.setAttribute('clip-path', 'url(#clippath)');
+                newGElement.setAttribute('id', 'clip_1');
 
-                            // Create a new <g> element with specified properties
-                            let newGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                            newGElement.setAttribute('clip-path', 'url(#clippath)');
-                            newGElement.setAttribute('id', 'clip_1');
+                // Create the replacement image
+                let imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+                imageElement.setAttribute('overflow', 'visible');
+                imageElement.setAttribute('x', xcoordsvg);
+                imageElement.setAttribute('y', ycoordsvg);
+                imageElement.setAttribute('width', widthsvg);
+                imageElement.setAttribute('height', heightsvg);
+                imageElement.setAttribute('xlink:href', '');
 
-                            // Insert the new <g> element after the <clipPath> element
-                            clipPathElement.parentNode.insertBefore(newGElement, clipPathElement.nextSibling);
+                newGElement.appendChild(imageElement);
 
-                            // Create a new <image> element with specified properties
-                            let imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-                            imageElement.setAttribute('overflow', 'visible');
-                            imageElement.setAttribute('x', xcoordsvg);
-                            imageElement.setAttribute('y', ycoordsvg);
-                            imageElement.setAttribute('width', widthsvg);
-                            imageElement.setAttribute('height', heightsvg);
-                            imageElement.setAttribute('xlink:href', '');
+                // Clear the SVG contents and rebuild it cleanly
+                while (svgElement.firstChild) {
+                    svgElement.removeChild(svgElement.firstChild);
+                }
 
-                            // Append the new <image> element inside the <g id="clip_1">
-                            newGElement.appendChild(imageElement);
-                        }
-                    } else {
-                        throw new Error('No layer group found.');
-                    }
+                const wrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                wrapper.appendChild(clipPathElement);
+                wrapper.appendChild(newGElement);
+                svgElement.appendChild(wrapper);
 
                     // Add xmlns:xlink attribute to <svg>
                     svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');

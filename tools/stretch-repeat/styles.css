@@ -2,3 +2,18 @@
 
 .info{margin:24px 0 0;color:#fff;text-align:center;font-size:14px;line-height:1.6}
 .info+nav{margin-top:16px}
+
+.how-to-button{margin-left:auto;white-space:nowrap;padding:8px 16px;font-size:14px}
+.how-to-dialog{width:min(920px,calc(100% - 48px));max-height:calc(100dvh - 48px);padding:0;border:0;border-radius:8px;color:#2c2e2f;box-shadow:0 12px 48px #0004}
+.how-to-dialog::backdrop{background:rgba(15,30,50,.6)}
+.how-to-heading{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 32px;background:#fff;border-bottom:1px solid #e5e8eb}
+.how-to-heading h2{font-size:23px;font-weight:400}
+.how-to-content{padding:0 32px 32px}
+.how-to-content section{padding-top:24px}
+.how-to-content h3{font-size:18px;font-weight:500;margin:0 0 12px}
+.how-to-content p{margin:10px 0;line-height:1.65}
+.how-to-content code{background:#f0f1f3;padding:2px 5px;border-radius:3px}
+.screenshot-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:200px;margin:20px 0 8px;padding:32px;background:#e5e8eb;border:1px dashed #b4bbc2;border-radius:8px;text-align:center;color:#555e67}
+.screenshot-placeholder span{max-width:590px;font-size:14px}
+body.tutorial-open{overflow:hidden}
+@media(max-width:600px){.card>header{flex-wrap:wrap}.how-to-button{margin-left:36px}.how-to-dialog{width:calc(100% - 24px);max-height:calc(100dvh - 24px)}.how-to-heading{padding:18px}.how-to-heading h2{font-size:20px}.how-to-content{padding:0 18px 24px}.screenshot-placeholder{min-height:170px;padding:22px 16px}}

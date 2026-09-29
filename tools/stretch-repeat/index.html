@@ -8,14 +8,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" href="../assets/favicon.ico">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=4">
   <script src="vendor/svgpath.min.js" defer></script>
-  <script src="script.js?v=3" defer></script>
+  <script src="script.js?v=4" defer></script>
 </head>
 <body>
   <main class="container">
     <section class="card">
-      <header><img src="../assets/easilLogo.png" alt="" width="24" height="24"><h1>Stretch & Repeat Converter</h1></header>
+      <header><img src="../assets/easilLogo.png" alt="" width="24" height="24"><h1>Stretch & Repeat Converter</h1><button id="how-to-open" class="secondary how-to-button" type="button" aria-haspopup="dialog" aria-controls="how-to-dialog">How To</button></header>
       <button id="drop-area" class="drop-area" type="button"><span>Click or drag to upload SVG</span></button>
       <input id="file-input" type="file" accept=".svg,image/svg+xml" hidden>
       <details id="paste-panel"><summary>Or paste SVG code</summary><label class="sr-only" for="input-code">SVG source</label><textarea id="input-code" rows="7" placeholder="Paste your SVG code here" spellcheck="false"></textarea><button id="convert-code" class="secondary" type="button">Convert SVG</button></details>
@@ -44,5 +44,36 @@
     <p class="info">Export your SVG with artwork grouped as <strong>L / C / R</strong>. Upload one file at a time.</p>
     <nav aria-label="Converters"><a href="../">All utilities</a><span aria-hidden="true">·</span><a href="../shape-mask/">Shape Mask Converter</a></nav>
   </main>
+  <dialog id="how-to-dialog" class="how-to-dialog" aria-labelledby="how-to-title">
+    <div class="how-to-heading">
+      <h2 id="how-to-title">How to prepare your SVG</h2>
+      <button id="how-to-close" class="secondary" type="button" aria-label="Close tutorial" autofocus>Close</button>
+    </div>
+    <div class="how-to-content">
+      <section aria-labelledby="how-to-groups">
+        <h3 id="how-to-groups">1. Create the L, C and R groups</h3>
+        <p>Set up a horizontal stretchable element in Illustrator. Name the three groups exactly <code>L</code>, <code>C</code> and <code>R</code>: left cap, repeating centre and right cap.</p>
+        <p>Keep these groups at the top level, without an extra group around them. Put all visible artwork inside them and use one artboard for the complete element.</p>
+        <div class="screenshot-placeholder"><strong>Screenshot: artwork and Layers panel</strong><span>Show the complete element on its artboard, with the Layers panel expanded to show the three top-level groups named L, C and R.</span></div>
+      </section>
+      <section aria-labelledby="how-to-centre">
+        <h3 id="how-to-centre">2. Make C one repeatable tile</h3>
+        <p>The centre should contain one complete repeat. Its left and right edges need to join when copies are placed side by side. Check this by temporarily duplicating C horizontally, then remove the extra copies before exporting.</p>
+        <p>The converter uses C’s artwork bounds to detect the tile width, then subtracts 1 unit for overlap between repeats. You can change the resulting width in <strong>Adjust settings</strong>.</p>
+        <div class="screenshot-placeholder"><strong>Screenshot: checking the centre repeat</strong><span>Show one centre tile and three copies placed side by side, with the joins marked so designers can see how the edges meet.</span></div>
+      </section>
+      <section aria-labelledby="how-to-caps">
+        <h3 id="how-to-caps">3. Overlap the endcaps if needed</h3>
+        <p>L and R keep their shape as the element gets wider. They can extend into C to cover the joins. Draw any overlap into the original artwork; the converter detects it from the group positions.</p>
+        <p>For example, if C starts at x = 80 and L reaches x = 90, the left cap overlaps the centre by 10 units. Do the same at the right join if required.</p>
+        <div class="screenshot-placeholder"><strong>Screenshot: endcap overlap</strong><span>Show a close-up of both joins with L blue, C green and R red. Mark the nominal centre boundaries and highlight the artwork overlapping each boundary.</span></div>
+      </section>
+      <section aria-labelledby="how-to-export">
+        <h3 id="how-to-export">4. Export, convert and check</h3>
+        <p>Outline text and strokes that define the tile edges, and expand rotated or skewed section transforms. Export an SVG from Illustrator with the artboard and group names preserved.</p>
+        <p>Upload the SVG, resize the preview and use <strong>Show section colours</strong> to check the joins. Download the converted SVG and import it into the design app. Preview width and diagnostic colours are not included in the download.</p>
+      </section>
+    </div>
+  </dialog>
 </body>
 </html>

@@ -236,6 +236,28 @@
   $('reset-settings').addEventListener('click',()=>{settings={...model.defaults};fillSettings();$('settings-error').textContent='';$('preview-width').min=number(Math.max(settings.left+settings.right+1,model.width*.75));status('Detected settings restored.');refresh();});
   $('download').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([$('output-code').value],{type:'image/svg+xml'}));const a=document.createElement('a');a.href=url;a.download=`${filename}-repeat.svg`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
   $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output-code').value);$('copy').textContent='Copied!';setTimeout(()=>$('copy').textContent='Copy SVG code',1500);}catch{$('output-code').closest('details').open=true;$('output-code').select();status('Select and copy the output code below.');}});
+  const tutorial = $('how-to-dialog');
+  $('how-to-open').addEventListener('click', () => {
+    tutorial.showModal();
+    tutorial.scrollTop = 0;
+    document.body.classList.add('tutorial-open');
+  });
+  $('how-to-close').addEventListener('click', () => tutorial.close());
+  tutorial.addEventListener('close', () => {
+    document.body.classList.remove('tutorial-open');
+    $('how-to-open').focus();
+  });
+  // Only close on a click that both starts and ends outside the dialog.
+  let backdropPress = false;
+  const outsideTutorial = event => {
+    const rect = tutorial.getBoundingClientRect();
+    return event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+  };
+  tutorial.addEventListener('pointerdown', event => { backdropPress = event.target === tutorial && outsideTutorial(event); });
+  tutorial.addEventListener('click', event => {
+    if (backdropPress && event.target === tutorial && outsideTutorial(event)) tutorial.close();
+    backdropPress = false;
+  });
   // Expose the same engine to browser regression tests without a separate implementation.
   window.StretchRepeat={inspect,build};
 })();

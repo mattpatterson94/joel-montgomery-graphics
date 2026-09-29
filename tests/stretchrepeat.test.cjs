@@ -1,0 +1,62 @@
+// Run with: NODE_PATH=/path/to/node_modules node tests/stretchrepeat.test.cjs
+// Start a local HTTP server at :8765 first. CHROMIUM_PATH can select a browser.
+const { chromium } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+(async () => {
+  let executablePath = process.env.CHROMIUM_PATH;
+  let args = ['--no-sandbox'];
+  if (process.env.SPARTICUZ_PATH) {
+    const bundled = (await import(process.env.SPARTICUZ_PATH + '/build/index.js')).default;
+    executablePath = await bundled.executablePath(); args = bundled.args;
+  }
+  const browser = await chromium.launch({ executablePath, args, headless:true });
+  const page = await browser.newPage({viewport:{width:1100,height:1050}});
+  const errors=[];page.on('pageerror',err=>errors.push(err.message));
+  await page.goto('http://localhost:8765/stretchrepeat.html');
+  const fixture=fs.readFileSync(require('node:path').join(__dirname,'fixtures/stretchable.svg'),'utf8');
+  const result=await page.evaluate(async source=>{
+    const data=await StretchRepeat.inspect(source);
+    const widths=[240,319,320,321,510.771448,560,561];
+    const rows=[];
+    for(const width of widths){
+      const text=StretchRepeat.build(data,data.defaults,width,true,true);
+      const doc=new DOMParser().parseFromString(text,'image/svg+xml');
+      doc.querySelector('[id="L"]').remove();doc.querySelector('[id="R"]').remove();
+      const root=doc.documentElement;root.setAttribute('width',width);root.setAttribute('height',240);
+      const img=new Image();img.src='data:image/svg+xml;base64,'+btoa(new XMLSerializer().serializeToString(root));await img.decode();
+      const canvas=document.createElement('canvas');canvas.width=Math.ceil(width);canvas.height=240;
+      const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0);const pixels=ctx.getImageData(0,120,canvas.width,1).data;
+      const visible=[];for(let x=0;x<canvas.width;x++)if(pixels[x*4+3]>128)visible.push(x);
+      rows.push({width,min:Math.min(...visible),max:Math.max(...visible),green:pixels[100*4+1]});
+    }
+    return {defaults:data.defaults,rows,output:StretchRepeat.build(data,data.defaults)};
+  },fixture);
+  assert.equal(result.defaults.tile,80);assert.equal(result.defaults.left,80);assert.equal(result.defaults.right,80);
+  for(const row of result.rows){assert.equal(row.min,80);assert.ok(Math.abs(row.max-(row.width-81))<1,JSON.stringify(row));assert.equal(row.green,174);}
+  assert.ok(result.output.includes('rgb(224, 85, 85)'));
+  // Upload UI, invalid settings, diagnostic-only colours, mobile layout and errors.
+  await page.locator('#file-input').setInputFiles({name:'demo.svg',mimeType:'image/svg+xml',buffer:Buffer.from(fixture)});
+  await page.waitForSelector('#result:not([hidden])');
+  const output=await page.locator('#output-code').inputValue();
+  await page.locator('#diagnostic').check();assert.equal(await page.locator('#output-code').inputValue(),output);
+  await page.locator('#settings summary').click();await page.locator('#tile-width').fill('0');await page.locator('#apply-settings').click();assert.match(await page.locator('#settings-error').innerText(),/positive/);
+  await page.locator('#reset-settings').click();assert.equal(await page.locator('#tile-width').inputValue(),'80');
+  await page.screenshot({path:'/tmp/stretchrepeat-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  await page.screenshot({path:'/tmp/stretchrepeat-mobile.png',fullPage:true});
+  const cases=await page.evaluate(async()=>{
+    const root=content=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 20 280 100">${content}</svg>`;
+    const source=root('<defs><style>.art{fill:#123456}</style></defs><g id="L"><rect class="art" x="10" y="20" width="90" height="100"/></g><g id="C"><path class="art" d="M90 20h120v100H90Z"/></g><g id="R"><rect class="art" x="200" y="20" width="90" height="100"/></g>');
+    const data=await StretchRepeat.inspect(source);
+    const rejected=[];
+    for(const bad of [root('<g id="L"/>'),source.replace('<defs>','<script>alert(1)</script><defs>'),source.replace('fill:#123456','fill:url(https://example.com/a)'),source.replace('id="C"','id="L"'),'<svg broken']){
+      try{await StretchRepeat.inspect(bad);rejected.push(false);}catch{rejected.push(true);}
+    }
+    return {defaults:data.defaults,rejected,output:StretchRepeat.build(data,data.defaults)};
+  });
+  assert.deepEqual(cases.defaults,{tile:120,start:80,left:80,right:80});assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('rgb(18, 52, 86)'));
+  const downloadPromise=page.waitForEvent('download');await page.locator('#download').click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'demo-repeat.svg');
+  assert.deepEqual(errors,[]);console.log('PASS: geometry, tile boundaries, colours, upload, validation, download and mobile layout.');
+  await browser.close();
+})().catch(error=>{console.error(error);process.exit(1);});

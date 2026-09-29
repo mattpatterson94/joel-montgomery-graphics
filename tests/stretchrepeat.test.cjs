@@ -34,7 +34,33 @@ const fs = require('node:fs');
   },fixture);
   assert.equal(result.defaults.tile,80);assert.equal(result.defaults.left,80);assert.equal(result.defaults.right,80);
   for(const row of result.rows){assert.equal(row.min,80);assert.ok(Math.abs(row.max-(row.width-81))<1,JSON.stringify(row));assert.equal(row.green,174);}
-  assert.ok(result.output.includes('rgb(224, 85, 85)'));
+  assert.ok(result.output.includes('#e05555'));
+  // Structural regression: the app must discover the tile in the first defs.
+  const structure = await page.evaluate(text=>{
+    const svg=new DOMParser().parseFromString(text,'image/svg+xml').documentElement;
+    const pattern=svg.querySelector('defs > pattern');
+    return {defs:svg.querySelectorAll(':scope > defs').length,id:pattern.id,
+      first:svg.querySelector('defs').firstElementChild.localName,
+      transforms:pattern.querySelectorAll('[transform]').length,
+      shape:pattern.firstElementChild.localName,
+      minX:Math.min(...[...pattern.querySelector('polygon').points].map(p=>p.x)),
+      maxX:Math.max(...[...pattern.querySelector('polygon').points].map(p=>p.x)),
+      cap:svg.querySelector('[id="R"]').firstElementChild.localName};
+  },result.output);
+  assert.deepEqual(structure,{defs:1,id:'PATTERN',first:'pattern',transforms:0,shape:'polygon',minX:0,maxX:80,cap:'polygon'});
+  fs.writeFileSync('/tmp/demo2-repeat-fixed.svg',result.output);
+  const working=fs.readFileSync(require('node:path').join(__dirname,'fixtures/working-repeat.svg'),'utf8');
+  const parity=await page.evaluate(({working,output})=>{
+    const parse=s=>new DOMParser().parseFromString(s,'image/svg+xml').documentElement;
+    const a=parse(working),b=parse(output);
+    const tags=root=>[...root.querySelectorAll('*')].map(el=>el.localName).join(',');
+    const pa=[...a.querySelectorAll('polygon')],pb=[...b.querySelectorAll('polygon')];
+    const geometry=pa.every((poly,i)=>[...poly.points].every((p,j)=>Math.abs(p.x-pb[i].points[j].x)<0.00001&&Math.abs(p.y-pb[i].points[j].y)<0.00001));
+    const filter=root=>new XMLSerializer().serializeToString(root.querySelector('filter'));
+    return {tags:tags(a)===tags(b),geometry,filter:filter(a)===filter(b)};
+  },{working,output:result.output});
+  assert.deepEqual(parity,{tags:true,geometry:true,filter:true});
+
   // Upload UI, invalid settings, diagnostic-only colours, mobile layout and errors.
   await page.locator('#file-input').setInputFiles({name:'demo.svg',mimeType:'image/svg+xml',buffer:Buffer.from(fixture)});
   await page.waitForSelector('#result:not([hidden])');
@@ -55,7 +81,7 @@ const fs = require('node:fs');
     }
     return {defaults:data.defaults,rejected,output:StretchRepeat.build(data,data.defaults)};
   });
-  assert.deepEqual(cases.defaults,{tile:120,start:80,left:80,right:80});assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('rgb(18, 52, 86)'));
+  assert.deepEqual(cases.defaults,{tile:120,start:80,left:80,right:80});assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('#123456'));
   const downloadPromise=page.waitForEvent('download');await page.locator('#download').click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'demo-repeat.svg');
   assert.deepEqual(errors,[]);console.log('PASS: geometry, tile boundaries, colours, upload, validation, download and mobile layout.');
   await browser.close();

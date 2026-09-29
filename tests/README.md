@@ -38,3 +38,11 @@ The resize preview reproduces the app's whole-tile `<use>` expansion. Its width
 and colours are not exported. The download retains a pattern-based REPEAT_X
 structure and the tested outer viewport filter. Final app import still needs a
 smoke test, especially for artwork containing gradients, masks or nested uses.
+
+The working-repeat.svg fixture is the asset confirmed to repeat in the design app.
+Regression checks require one defs, a PATTERN tile first in that defs, direct
+normalised polygon coordinates, and matching filter/geometry against that fixture.
+The browser preview alone cannot verify that the external app recognises an asset.
+
+Path translations use the vendored svgpath 2.6.0 browser bundle (MIT); see
+`vendor/svgpath.LICENSE`. No CDN or package installation is needed by site users.

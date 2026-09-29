@@ -106,17 +106,61 @@
         defaults:{tile:bounds.C.width, start:bounds.C.x, left:Math.max(0,left), right:Math.max(0,right)}};
     } finally { frame.remove(); }
   }
+  // Match the app-tested asset convention: presentation attributes and coordinates
+  // already in tile space, rather than a stack of normalising group transforms.
+  function prepareArtwork(source, dx = 0) {
+    const root = source.cloneNode(true);
+    const defaults = {'fill':'rgb(0, 0, 0)','fill-opacity':'1','fill-rule':'nonzero','stroke':'none','stroke-width':'1px','stroke-opacity':'1','stroke-linecap':'butt','stroke-linejoin':'miter','stroke-miterlimit':'4','stroke-dasharray':'none','stroke-dashoffset':'0px','opacity':'1','clip-rule':'nonzero','clip-path':'none','mask':'none','filter':'none','color':'rgb(0, 0, 0)','display':'inline','visibility':'visible','stop-color':'rgb(0, 0, 0)','stop-opacity':'1','vector-effect':'none','paint-order':'normal','color-interpolation':'srgb','color-interpolation-filters':'linearrgb'};
+    const snapshots = new Map([root,...root.querySelectorAll('*')].map(el => [el, Object.fromEntries(properties.map(p=>[p,el.style.getPropertyValue(p)]))]));
+    for (const [el, values] of snapshots) {
+      const parent = snapshots.get(el.parentElement) || {};
+      for (const [prop,value] of Object.entries(values)) {
+        if (!value) continue;
+        if (value !== defaults[prop] || (parent[prop] && parent[prop] !== value)) {
+          el.setAttribute(prop, value.replace(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/g,(_,r,g,b)=>'#'+[r,g,b].map(v=>Number(v).toString(16).padStart(2,'0')).join('')));
+        }
+        el.style.removeProperty(prop);
+      }
+      el.removeAttribute('class');
+      if (!el.getAttribute('style')?.trim()) el.removeAttribute('style');
+    }
+    function normalise(el, x, y) {
+      // Keep coordinate-sensitive paint/effects in their own coordinate system.
+      const sensitive = [...el.attributes].some(a=>/url\(/.test(a.value)) || el.hasAttribute('style') || el.localName === 'use';
+      const matrix = el.transform?.baseVal?.consolidate()?.matrix;
+      if (sensitive || (matrix && (matrix.a!==1 || matrix.b!==0 || matrix.c!==0 || matrix.d!==1))) {
+        if (!x && !y) return el;
+        const wrapper=svgNode('g',{transform:`translate(${number(x)} ${number(y)})`});wrapper.append(el);return wrapper;
+      }
+      if(matrix){x+=matrix.e;y+=matrix.f;el.removeAttribute('transform');}
+      if(el.localName==='g') {
+        for(const child of [...el.children]) {const converted=normalise(child.cloneNode(true),x,y);child.replaceWith(converted);}
+        if(!el.attributes.length){const fragment=document.createDocumentFragment();fragment.append(...el.childNodes);return fragment;}
+        return el;
+      }
+      const move=(attr,delta)=>el.setAttribute(attr,number(Number(el.getAttribute(attr)||0)+delta));
+      if(el.localName==='polygon'||el.localName==='polyline') {
+        const points=[...el.points].map(p=>`${number(p.x+x)} ${number(p.y+y)}`);el.setAttribute('points',points.join(' '));
+      } else if(el.localName==='path') {
+        el.setAttribute('d',SvgPath(el.getAttribute('d')||'').translate(x,y).round(6).toString());
+      } else if(el.localName==='rect') {move('x',x);move('y',y);}
+      else if(el.localName==='circle'||el.localName==='ellipse') {move('cx',x);move('cy',y);}
+      else if(el.localName==='line') {move('x1',x);move('x2',x);move('y1',y);move('y2',y);}
+      else if(x||y) {const wrapper=svgNode('g',{transform:`translate(${number(x)} ${number(y)})`});wrapper.append(el);return wrapper;}
+      return el;
+    }
+    return normalise(root,dx,0);
+  }
   function build(data, config, width = data.width, diagnostic = false, simulate = false) {
     const svg = svgNode('svg', {version:'1.1', viewBox:`0 0 ${number(width)} ${number(data.height)}`});
-    for (const defs of data.definitions) svg.append(defs.cloneNode(true));
-    const ids = new Set([...svg.querySelectorAll('[id]')].map(el => el.id));
+    const defs = svgNode('defs'); svg.append(defs);
+    for (const source of data.definitions) for (const child of source.children) defs.append(child.cloneNode(true));
+    const ids = new Set([...defs.querySelectorAll('[id]')].map(el => el.id));
     for (const part of Object.values(data.parts)) for (const el of part.querySelectorAll('[id]')) ids.add(el.id);
     const unique = base => {let id=base; while(ids.has(id)) id+='x'; ids.add(id); return id;};
-    const patternID=unique('sr-pattern'), filterID=unique('sr-interior');
-    const defs = svgNode('defs'); svg.append(defs);
+    const patternID=unique('PATTERN'), filterID=unique('interior');
     const pattern = svgNode(simulate ? 'g' : 'pattern', {id:patternID, patternUnits:'userSpaceOnUse',x:0,y:0,width:number(config.tile),height:number(data.height)});
-    const centre = data.parts.C.cloneNode(true);
-    const tile = svgNode('g',{transform:`translate(${number(-config.start)} 0)`}); tile.append(centre); pattern.append(tile); defs.append(pattern);
+    pattern.append(prepareArtwork(data.parts.C, -config.start)); defs.prepend(pattern);
     const filter = svgNode('filter',{id:filterID,filterUnits:'userSpaceOnUse',primitiveUnits:'userSpaceOnUse',x:0,y:0,width:'100%',height:number(data.height),'color-interpolation-filters':'sRGB'});
     filter.append(svgNode('feFlood',{'flood-color':'white',result:'bounds'}),svgNode('feOffset',{in:'bounds',dx:number(config.left),dy:0,result:'left'}),svgNode('feOffset',{in:'bounds',dx:number(-config.right),dy:0,result:'right'}),svgNode('feComposite',{in:'left',in2:'right',operator:'in',result:'interiorAlpha'}),svgNode('feComposite',{in:'SourceGraphic',in2:'interiorAlpha',operator:'in'})); defs.append(filter);
     const outer=svgNode('g',{filter:`url(#${filterID})`}), repeat=svgNode('g',{id:'REPEAT_X'}); outer.append(repeat);svg.append(outer);
@@ -126,19 +170,19 @@
       for(let i=0;i<count;i++){const use=svgNode('use',{transform:`translate(${number(i*config.tile)} 0)`});use.setAttributeNS(XLINK,'xlink:href',`#${patternID}`);repeat.append(use);}
     } else repeat.append(svgNode('rect',{x:0,y:0,width:number(data.width),height:number(data.height),fill:`url(#${patternID})`}));
     for(const id of ['R','L']) {
-      const cap=svgNode('g',{id});cap.append(data.parts[id].cloneNode(true));
+      const cap=svgNode('g',{id});cap.append(prepareArtwork(data.parts[id]));
       if(id==='R' && simulate) cap.setAttribute('transform',`translate(${number(width-data.width)} 0)`);
       svg.append(cap);
       if(diagnostic) recolour(cap,id==='L'?'#2f80ed':'#eb5757');
     }
-    if(diagnostic) recolour(centre,'#27ae60');
+    if(diagnostic) recolour(pattern,'#27ae60');
     return '<?xml version="1.0" encoding="UTF-8"?>\n'+serialise(svg);
   }
   function recolour(group, colour) {
     for(const el of [group,...group.querySelectorAll('*')]) {
       if(el.closest('mask,clipPath,filter,linearGradient,radialGradient')) continue;
-      if(el.style.fill !== 'none') el.style.setProperty('fill',colour,'important');
-      if(el.style.stroke && el.style.stroke !== 'none') el.style.setProperty('stroke',colour,'important');
+      if((el.style.fill || el.getAttribute('fill')) !== 'none') el.style.setProperty('fill',colour,'important');
+      if((el.style.stroke || el.getAttribute('stroke')) && (el.style.stroke || el.getAttribute('stroke')) !== 'none') el.style.setProperty('stroke',colour,'important');
     }
   }
   function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}

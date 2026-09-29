@@ -1,7 +1,7 @@
 # Stretch & Repeat converter checks
 
 The site is static and has no build step or production dependencies. Open
-`stretchrepeat.html` through a local HTTP server. All conversion happens locally.
+`tools/stretch-repeat/index.html` through a local HTTP server. All conversion happens locally.
 
 For browser regression tests, install Playwright in a temporary directory:
 
@@ -45,4 +45,8 @@ normalised polygon coordinates, and matching filter/geometry against that fixtur
 The browser preview alone cannot verify that the external app recognises an asset.
 
 Path translations use the vendored svgpath 2.6.0 browser bundle (MIT); see
-`vendor/svgpath.LICENSE`. No CDN or package installation is needed by site users.
+`tools/stretch-repeat/vendor/svgpath.LICENSE`. No CDN or package installation is needed by site users.
+
+Detected repeat tile widths now default to the measured centre width minus exactly
+1 SVG unit. End cutoffs, centre artwork and height remain unchanged. Manual tile
+width edits are used as entered; the subtraction is not applied a second time.

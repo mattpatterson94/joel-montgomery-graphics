@@ -100,10 +100,11 @@
         const wrapper = svgNode('g', {transform:`matrix(${matrix.a} ${matrix.b} ${matrix.c} ${matrix.d} ${matrix.e-vb[0]} ${matrix.f-vb[1]})`});
         copy.removeAttribute('id'); wrapper.append(copy); cloned[id] = wrapper;
       }
+      if (bounds.C.width <= 1) throw new Error('The detected centre width must be greater than 1 SVG unit to subtract 1 from the repeat tile width.');
       const left = bounds.C.x, right = vb[2] - bounds.C.x - bounds.C.width;
       if (left < -0.01 || right < -0.01) throw new Error('The centre must fit horizontally within the SVG artboard.');
       return {width:vb[2], height:vb[3], definitions, parts:cloned, bounds,
-        defaults:{tile:bounds.C.width, start:bounds.C.x, left:Math.max(0,left), right:Math.max(0,right)}};
+        defaults:{tile:bounds.C.width - 1, start:bounds.C.x, left:Math.max(0,left), right:Math.max(0,right)}};
     } finally { frame.remove(); }
   }
   // Match the app-tested asset convention: presentation attributes and coordinates

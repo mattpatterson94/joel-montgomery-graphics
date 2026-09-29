@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shape Mask Converter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <link rel="stylesheet" media="only screen and (max-width: 650px)" type="text/css" href="mobile.css">
+  <link rel="stylesheet" media="only screen and (min-width: 651px)" type="text/css" href="styles.css">
+  <link rel="icon" type="image/png" href="../assets/favicon.ico">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="script.js"></script>
+</head>
+
+<body>
+<div class="container">
+  <div class="modal">
+    <header class="header">
+    <img class="logo" src="../assets/easilLogo.png"/>
+    <p class="title">Shape Mask Converter</p>
+    </header>
+    <div class="main">
+      <div id="upload-hider">
+      <div id="drop-area" class="advanced-toggle">Click or drag to upload SVG</div>
+      </div>
+  <div id="inputs-hider" class="inputs advanced-toggle">
+    <label for="input" class="subtitle">Input</label>
+    <div class="input-area">
+      <textarea id="input" rows="15" cols="98" placeholder="Paste your SVG code here"></textarea>
+    </div>
+    <div class="output-area">
+      <label for="output" class="subtitle output-subtitle">Output</label>
+      <div class="area output-area">
+        <textarea id="output" rows="15" cols="98" readonly></textarea>
+      </div>
+    </div>
+  </div>
+  <div id="buttons-simple" class="buttons">
+    <div class="extra-buttons">
+    <input type="file" id="file-input"/>
+    <button id="submit-button-content">Download Processed SVG</button>
+    <button id="submit-button">Submit</button>
+    </div>
+    <button id="mode-switcher" class="mode-switcher">Advanced Mode</button>
+    <a id="alert-message-non-svg" class="alert-message advanced-toggle">Only SVG files are supported</a>
+    <a id="alert-message-svg-fail" class="alert-message advanced-toggle">SVG file is corrupt or in an unsupported format</a>
+  </div>
+  <div id="buttons-advanced" class="buttons advanced-toggle">
+    <div class="left-buttons">
+    <button id="submit-button-2" disabled><a id="submit-button-2-content"></a></button>
+    <a id="alert-message-simple" class="alert-message advanced-toggle">SVG code is corrupt or unsupported</a>
+    </div>
+    <div class="right-buttons">
+      <button id="copy-button" disabled onclick="copyOutput()"><a id="copy-button-content"></a></button>
+      <button id="mode-switcher-2" class="mode-switcher">Simple</button>
+    </div>
+  </div>
+  </div>
+  </div>
+  <a id="simple-explainer" class="info">Save your .svg files directly out of Illustrator, drag them to this window and processed versions will automatically be downloaded.<br>Note that this converter currently only supports single-frame Shape Masks.</a>
+  <a id="advanced-explainer" class="info advanced-toggle">Paste your SVG code, Submit, and the code will be processed. You can copy the code output and manually create an SVG file.<br>Note that this converter currently only supports single-frame Shape Masks.</a>
+  <nav class="utility-links" aria-label="Converters"><a href="../">All utilities</a><span aria-hidden="true"> · </span><a href="../stretch-repeat/">Stretch &amp; Repeat Converter</a></nav>
+</div>
+</body>
+</html>

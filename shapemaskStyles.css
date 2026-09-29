@@ -245,3 +245,14 @@ textarea {
   margin-top: 4px;
   margin-right: 12px;
 }
+
+.utility-links {
+  margin-top: 16px;
+  text-align: center;
+  font: 13px Roboto, Arial, sans-serif;
+}
+
+.utility-links a {
+  color: #fff;
+  text-underline-offset: 3px;
+}

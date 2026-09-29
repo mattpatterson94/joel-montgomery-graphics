@@ -12,11 +12,16 @@ const fs = require('node:fs');
   }
   const browser = await chromium.launch({ executablePath, args, headless:true });
   const page = await browser.newPage({viewport:{width:1100,height:1050}});
+  // Optional local copy of the same CDN dependency for offline test runners.
+  if(process.env.JQUERY_PATH) await page.route('https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js',route=>route.fulfill({path:process.env.JQUERY_PATH,contentType:'application/javascript'}));
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
-  await page.goto('http://localhost:8765/stretchrepeat.html');
+  await page.goto('http://localhost:8765/tools/stretch-repeat/');
   const fixture=fs.readFileSync(require('node:path').join(__dirname,'fixtures/stretchable.svg'),'utf8');
   const result=await page.evaluate(async source=>{
     const data=await StretchRepeat.inspect(source);
+    const detectedDefaults={...data.defaults};
+    // Keep the original 80-unit fixture checks separate from the new default.
+    data.defaults.tile=80;
     const widths=[240,319,320,321,510.771448,560,561];
     const rows=[];
     for(const width of widths){
@@ -30,9 +35,9 @@ const fs = require('node:fs');
       const visible=[];for(let x=0;x<canvas.width;x++)if(pixels[x*4+3]>128)visible.push(x);
       rows.push({width,min:Math.min(...visible),max:Math.max(...visible),green:pixels[100*4+1]});
     }
-    return {defaults:data.defaults,rows,output:StretchRepeat.build(data,data.defaults)};
+    return {defaults:detectedDefaults,rows,output:StretchRepeat.build(data,data.defaults)};
   },fixture);
-  assert.equal(result.defaults.tile,80);assert.equal(result.defaults.left,80);assert.equal(result.defaults.right,80);
+  assert.equal(result.defaults.tile,79);assert.equal(result.defaults.left,80);assert.equal(result.defaults.right,80);
   for(const row of result.rows){assert.equal(row.min,80);assert.ok(Math.abs(row.max-(row.width-81))<1,JSON.stringify(row));assert.equal(row.green,174);}
   assert.ok(result.output.includes('#e05555'));
   // Structural regression: the app must discover the tile in the first defs.
@@ -65,9 +70,12 @@ const fs = require('node:fs');
   await page.locator('#file-input').setInputFiles({name:'demo.svg',mimeType:'image/svg+xml',buffer:Buffer.from(fixture)});
   await page.waitForSelector('#result:not([hidden])');
   const output=await page.locator('#output-code').inputValue();
+  assert.match(output, /id="PATTERN"[^>]*width="79"/);
+  assert.match(output, /dx="80"/);
+  assert.match(output, /dx="-80"/);
   await page.locator('#diagnostic').check();assert.equal(await page.locator('#output-code').inputValue(),output);
   await page.locator('#settings summary').click();await page.locator('#tile-width').fill('0');await page.locator('#apply-settings').click();assert.match(await page.locator('#settings-error').innerText(),/positive/);
-  await page.locator('#reset-settings').click();assert.equal(await page.locator('#tile-width').inputValue(),'80');
+  await page.locator('#reset-settings').click();assert.equal(await page.locator('#tile-width').inputValue(),'79');
   await page.screenshot({path:'/tmp/stretchrepeat-desktop.png',fullPage:true});
   await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.screenshot({path:'/tmp/stretchrepeat-mobile.png',fullPage:true});
@@ -81,8 +89,19 @@ const fs = require('node:fs');
     }
     return {defaults:data.defaults,rejected,output:StretchRepeat.build(data,data.defaults)};
   });
-  assert.deepEqual(cases.defaults,{tile:120,start:80,left:80,right:80});assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('#123456'));
+  assert.deepEqual(cases.defaults,{tile:119,start:80,left:80,right:80});assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('#123456'));
   const downloadPromise=page.waitForEvent('download');await page.locator('#download').click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'demo-repeat.svg');
+  await page.goto('http://localhost:8765/stretchrepeat.html');
+  await page.waitForURL('**/tools/stretch-repeat/');
+  await page.getByRole('link',{name:'All utilities',exact:true}).click();
+  await page.waitForURL('**/tools/');
+  await page.screenshot({path:'/tmp/utilities-hub-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1100,height:900});
+  await page.screenshot({path:'/tmp/utilities-hub-desktop.png',fullPage:true});
+  await page.getByRole('link',{name:'Shape Mask Converter',exact:true}).click();
+  await page.waitForURL('**/tools/shape-mask/');
+  await page.goto('http://localhost:8765/shapemask.html');
+  await page.waitForURL('**/tools/shape-mask/');
   assert.deepEqual(errors,[]);console.log('PASS: geometry, tile boundaries, colours, upload, validation, download and mobile layout.');
   await browser.close();
 })().catch(error=>{console.error(error);process.exit(1);});

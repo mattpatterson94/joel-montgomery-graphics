@@ -9,13 +9,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" href="favicon2.ico">
   <link rel="stylesheet" href="stretchrepeatStyles.css">
-  <script src="stretchrepeatScript.js" defer></script>
+  <script src="vendor/svgpath.min.js" defer></script>
+  <script src="stretchrepeatScript.js?v=2" defer></script>
 </head>
 <body>
   <main class="container">
     <section class="card">
       <header><img src="easilLogo.png" alt="" width="24" height="24"><h1>Stretch & Repeat Converter</h1></header>
-      <p class="intro">Fixed ends. A repeating middle. Upload a horizontal stretchable SVG to get started.</p>
       <button id="drop-area" class="drop-area" type="button"><span>Click or drag to upload SVG</span><small>Artwork grouped as L / C / R · One file at a time</small></button>
       <input id="file-input" type="file" accept=".svg,image/svg+xml" hidden>
       <details id="paste-panel"><summary>Or paste SVG code</summary><label class="sr-only" for="input-code">SVG source</label><textarea id="input-code" rows="7" placeholder="Paste your SVG code here" spellcheck="false"></textarea><button id="convert-code" class="secondary" type="button">Convert SVG</button></details>
@@ -25,7 +25,7 @@
         <div class="preview"><img id="preview" alt="Converted SVG at the selected preview width"></div>
         <div class="range-label"><label for="preview-width">Resize preview</label><output id="width-label" for="preview-width"></output></div>
         <input id="preview-width" type="range" step="0.1">
-        <p class="hint">Drag to check the joins. Preview width and section colours do not affect your download.</p>
+        <p class="hint">Preview width and section colours do not affect your download.</p>
         <dl id="measurements" class="measurements"></dl>
         <details id="settings"><summary>Adjust settings</summary><p class="hint">Values use the SVG’s coordinate units. Cutoffs reserve space at each end; smaller cutoffs reveal more repeat beneath the caps.</p>
           <div class="fields">
@@ -41,8 +41,7 @@
         <details><summary>Output SVG code</summary><label class="sr-only" for="output-code">Converted SVG</label><textarea id="output-code" rows="8" readonly spellcheck="false"></textarea></details>
       </section>
     </section>
-    <p class="info">Export from Illustrator with groups named <strong>L</strong>, <strong>C</strong> and <strong>R</strong>.<br>Keep the endcaps overlapping the centre, and make the centre’s edges join cleanly.<br>Files stay in your browser. Horizontal elements only.</p>
-    <nav><a href="shapemask.html">Shape Mask Converter</a><span>·</span><a href="index.html">Home</a></nav>
+    <nav aria-label="Converters"><a href="shapemask.html">Shape Mask Converter</a></nav>
   </main>
 </body>
 </html>

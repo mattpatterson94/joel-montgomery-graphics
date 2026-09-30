@@ -1,21 +1,26 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=8';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=8';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=8';
-import {drawSensorArm} from './sensor.mjs?v=8';
-import {drawSideNet} from './side-net.mjs?v=8';
-import {drawNet} from './net.mjs?v=8';
-import {CourtAudio} from './sound.mjs?v=8';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=9';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=9';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=9';
+import {drawSensorArm} from './sensor.mjs?v=9';
+import {drawSideNet} from './side-net.mjs?v=9';
+import {drawNet} from './net.mjs?v=9';
+import {CourtAudio} from './sound.mjs?v=9';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
 const office=document.querySelector('.office');
 function alignOffice(){
- const rect=canvas.getBoundingClientRect();
+ const rect=canvas.getBoundingClientRect(),top=rect.top+window.scrollY;
  office.style.setProperty('--court-left',`${rect.left}px`);
  office.style.setProperty('--court-right',`${rect.right}px`);
- office.style.setProperty('--court-top',`${rect.top}px`);
+ office.style.setProperty('--court-top',`${top}px`);
  office.style.setProperty('--court-width',`${rect.width}px`);
- office.style.setProperty('--floor-top',`${rect.top+rect.width*1.28}px`);
+ const cornerX=Math.max(0,rect.left-12),cornerY=top+rect.width*1.28;
+ const nearY=cornerY+cornerX*.36;
+ office.style.setProperty('--corner-x',`${cornerX}px`);
+ office.style.setProperty('--corner-y',`${cornerY}px`);
+ office.style.setProperty('--near-floor-y',`${nearY}px`);
+ office.querySelector('.floor-edge path').setAttribute('d',`M0 ${nearY}L${cornerX} ${cornerY}H${document.documentElement.clientWidth}`);
 }
 new ResizeObserver(alignOffice).observe(canvas);
 window.addEventListener('resize',alignOffice);alignOffice();

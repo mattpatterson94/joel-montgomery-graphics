@@ -1,4 +1,4 @@
-import {RIM_Y} from './physics.mjs?v=7';
+import {RIM_Y} from './physics.mjs?v=8';
 // A hinged paddle reaches into the basket from its back edge. It swings down
 // with the ball, then the spring returns it with a small damped overshoot.
 export function sensorAngle(reaction,now,reducedMotion=false){

@@ -1,11 +1,24 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=7';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=7';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=7';
-import {drawSensorArm} from './sensor.mjs?v=7';
-import {drawSideNet} from './side-net.mjs?v=7';
-import {drawNet} from './net.mjs?v=7';
-import {CourtAudio} from './sound.mjs?v=7';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=8';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=8';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=8';
+import {drawSensorArm} from './sensor.mjs?v=8';
+import {drawSideNet} from './side-net.mjs?v=8';
+import {drawNet} from './net.mjs?v=8';
+import {CourtAudio} from './sound.mjs?v=8';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
+// Anchor the room to the actual court bounds, including on ultrawide screens.
+// The mural ends outside the machine instead of using a viewport percentage.
+const office=document.querySelector('.office');
+function alignOffice(){
+ const rect=canvas.getBoundingClientRect();
+ office.style.setProperty('--court-left',`${rect.left}px`);
+ office.style.setProperty('--court-right',`${rect.right}px`);
+ office.style.setProperty('--court-top',`${rect.top}px`);
+ office.style.setProperty('--court-width',`${rect.width}px`);
+ office.style.setProperty('--floor-top',`${rect.top+rect.width*1.28}px`);
+}
+new ResizeObserver(alignOffice).observe(canvas);
+window.addEventListener('resize',alignOffice);alignOffice();
 const timer = document.querySelector('#timer'), scoreEls = [document.querySelector('#p1'),document.querySelector('#p2')];
 const phase = document.querySelector('#phase'), multiplier = document.querySelector('#multiplier');
 const start = document.querySelector('#start'), message = document.querySelector('#message');
@@ -52,7 +65,11 @@ function backboard(){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
   drawSideNet(b);b.restore();
  }
- path(b,[[26,935],[774,935]],null,'#aaa7ad',7);
+ path(b,[[26,935],[774,935]],null,'#535b5d',10);
+ path(b,[[26,932],[774,932]],null,'#c0c7c7',3);
+ for(const x of [26,774]){b.fillStyle='#25292c';b.fillRect(x-9,926,18,15);}
+ // A fabric apron hides the supports where they attach to the ball return.
+ path(b,[[26,940],[774,940],[756,956],[44,956]],'#111518');
  b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],918);b.fillText('P2',HOOPS[1],918);
 }
 artwork.addEventListener('load',backboard);

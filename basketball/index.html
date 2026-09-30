@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Hoops of Fun</title>
+  <link rel="stylesheet" href="styles.css?v=1">
+  <script type="module" src="game.js?v=1"></script>
+</head>
+<body>
+  <main>
+    <header><span class="eyebrow">COPIRITE / OFFICE ARCADE</span><span class="tag">2 HOOPS · 30 SECONDS</span></header>
+    <div class="machine">
+      <canvas id="court" width="800" height="800" tabindex="0" aria-label="Basketball court. Swipe a ball upwards towards either hoop. Keyboard: A shoots left; L shoots right."></canvas>
+      <div class="scoreboard" aria-label="Scoreboard">
+        <div class="clock"><span>TIME</span><output id="timer">30</output></div>
+        <div class="scores"><div><span>P1</span><output id="p1">00</output></div><div><span>P2</span><output id="p2">00</output></div></div>
+      </div>
+      <div class="round-status"><span id="phase">FREE PLAY</span><span id="multiplier">1 PT / BASKET</span></div>
+    </div>
+    <div class="controls"><button id="start" type="button">Start round <span>↗</span></button><p id="message" role="status" aria-live="polite">Shoot anytime. Start a round to keep score.</p></div>
+    <p class="help">Swipe a ball up towards a hoop. Longer swipes throw harder.<br><kbd>A</kbd> left hoop <span class="divider">/</span> <kbd>L</kbd> right hoop · Hold for more power.</p>
+    <p class="rules">1 point per basket · 20s left: double · 10s left: triple</p>
+  </main>
+</body>
+</html>

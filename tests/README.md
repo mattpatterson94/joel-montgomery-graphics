@@ -86,3 +86,10 @@ outline strokes/text and flatten gradients, linked content and live effects.
 Empty cells retain an empty named group, useful for hollow frames. Preview resizing
 simulates fixed thirds and stretching centre/edges; test all directions, especially
 empty sections, in the target design app before relying on its importer behaviour.
+
+## Hidden basketball game
+
+Run `node tests/basketball.test.cjs` with the same HTTP server and Playwright
+setup. Checks cover downward basket detection, misses, separate P1/P2 scoring,
+30-second rounds, 20/10-second multipliers, free play, restart, mouse swipes,
+real mobile touch events and narrow layouts. The unlisted page is `/basketball/`.

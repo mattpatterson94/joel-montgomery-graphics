@@ -1,4 +1,4 @@
-import {RIM_Y,RIM_HEIGHT,clamp} from './physics.mjs?v=4';
+import {RIM_Y,RIM_HEIGHT,clamp} from './physics.mjs?v=5';
 export function netShape(reaction,now,t){
  if(!reaction)return {shift:0,stretch:0,bulge:0,rim:0};
  const elapsed=(now-reaction.time)/1000,decay=Math.exp(-elapsed*4);
@@ -14,7 +14,7 @@ export function netShape(reaction,now,t){
 }
 export function drawNet(ctx,x,now,front,reaction){
  const rows=4,segments=8;
- function point(t,angle){const shape=netShape(reaction,now,t);const radius=49-21*t+shape.bulge;return [x+radius*Math.cos(angle)+shape.shift,RIM_Y+70*t+(13-6*t)*Math.sin(angle)+shape.stretch+shape.rim];}
+ function point(t,angle){const shape=netShape(reaction,now,t);const radius=64-25*t+shape.bulge;return [x+radius*Math.cos(angle)+shape.shift,RIM_Y+78*t+(16-7*t)*Math.sin(angle)+shape.stretch+shape.rim];}
  ctx.save();ctx.lineWidth=front?1.35:1.1;ctx.strokeStyle=front?'#e5e3df':'#797e88';
  // Diamond mesh. Top nodes stay on the rim while a travelling bulge and lower
  // collar stretch follow the ball, followed by a small damped return motion.
@@ -27,7 +27,7 @@ export function drawNet(ctx,x,now,front,reaction){
    }
  }
  const lower=netShape(reaction,now,1);
- ctx.beginPath();ctx.ellipse(x+lower.shift,RIM_Y+70+lower.stretch,28+lower.bulge,7,0,front?0:Math.PI,front?Math.PI:2*Math.PI);ctx.strokeStyle='#3270b6';ctx.lineWidth=2;ctx.stroke();
+ ctx.beginPath();ctx.ellipse(x+lower.shift,RIM_Y+78+lower.stretch,39+lower.bulge,9,0,front?0:Math.PI,front?Math.PI:2*Math.PI);ctx.strokeStyle='#3270b6';ctx.lineWidth=2;ctx.stroke();
  const rim=netShape(reaction,now,0).rim;
- ctx.beginPath();ctx.ellipse(x,RIM_Y+rim,49,13,0,front?0:Math.PI,front?Math.PI:2*Math.PI);ctx.strokeStyle=front?'#ef8035':'#a84a22';ctx.lineWidth=6;ctx.stroke();ctx.restore();
+ ctx.beginPath();ctx.ellipse(x,RIM_Y+rim,64,16,0,front?0:Math.PI,front?Math.PI:2*Math.PI);ctx.strokeStyle=front?'#ef8035':'#a84a22';ctx.lineWidth=6;ctx.stroke();ctx.restore();
 }

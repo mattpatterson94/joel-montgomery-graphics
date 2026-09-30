@@ -3,12 +3,12 @@ const assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 (async()=>{
  const physics=await import('../basketball/physics.mjs');
- const {pointsAt,remaining,makeBall,stepBall,project,RIM_Y,HOOPS,hoopWorldX,chargePower,rackX}=physics;
+ const {pointsAt,remaining,makeBall,stepBall,project,RIM_Y,HOOPS,hoopWorldX,chargePower,rackX,COURT_HEIGHT,RACK_Y,GRAVITY,BALL_RADIUS}=physics;
  const {gestureBall,heldPosition,previewArc,releaseSpeed}=await import('../basketball/gestures.mjs');
  const {netShape}=await import('../basketball/net.mjs');
  const aimFor=(lane,x)=> (hoopWorldX(lane)-x)/1.65;
  function flight(ball,fps=120){const hits=[];for(let i=0;i<fps*5;i++){const hit=stepBall(ball,1/fps);if(hit!==-1)hits.push(hit);}return{ball,hits};}
- function gesture(lane,origin,dx=0,dy=240,duration=350,steps=14){return{lane,origin,start:{x:origin,y:684},end:{x:origin+dx,y:684-dy},samples:Array.from({length:steps+1},(_,i)=>({x:origin+dx*i/steps,y:684-dy*i/steps,t:duration*i/steps}))};}
+ function gesture(lane,origin,dx=0,dy=240,duration=350,steps=14){return{lane,origin,start:{x:origin,y:RACK_Y},end:{x:origin+dx,y:RACK_Y-dy},samples:Array.from({length:steps+1},(_,i)=>({x:origin+dx*i/steps,y:RACK_Y-dy*i/steps,t:duration*i/steps}))};}
  assert.equal(pointsAt(30),1);assert.equal(pointsAt(20.001),1);assert.equal(pointsAt(20),2);assert.equal(pointsAt(10),3);assert.equal(pointsAt(0),0);assert.equal(remaining(30000,31000),0);
  for(const lane of [0,1])for(const fps of [30,60,144])assert.deepEqual(flight(makeBall(lane,aimFor(lane,HOOPS[lane]),280,1),fps).hits,[lane]);
  for(const lane of [0,1]){
@@ -28,8 +28,10 @@ const {chromium}=require('playwright');
  assert.ok(Math.abs(releaseSpeed(sparse.samples,350)-releaseSpeed(dense.samples,350))<.01,'sample-rate-independent velocity');
  const g=gesture(0,216),shot=gestureBall(g,350),held=heldPosition(g);
  assert.equal(shot.x,held.x);assert.equal(shot.h,held.h,'release does not jump back to rack');
+ assert.equal(project(216,76,0).y,RACK_Y);assert.equal(BALL_RADIUS,52);
+ const timed=gestureBall(g,350);let scoredAt=0;for(let i=0;i<240;i++){if(stepBall(timed,1/240)>=0){scoredAt=timed.age;break;}}assert.ok(scoredAt>.75&&scoredAt<1,'shorter hang time');
  const preview=previewArc(shot),t=.035;
- assert.ok(Math.abs(preview[0].h-(shot.h+shot.vh*t-900*t*t))<.001);
+ assert.ok(Math.abs(preview[0].h-(shot.h+shot.vh*t-GRAVITY*t*t/2))<.001);
  assert.ok(preview.length<15,'guide stops before the landing');
  const arc=gestureBall(g,350);for(let i=0;i<75;i++)stepBall(arc,1/120);assert.ok(project(arc.x,arc.h,arc.z).y<RIM_Y-30);
  const spin=makeBall(0,-75,280,1),original=[...spin.spin];stepBall(spin,.1);assert.ok(spin.spin.filter((v,i)=>v!==original[i]).length>=2,'multi-axis spin');
@@ -41,6 +43,7 @@ const {chromium}=require('playwright');
  const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  const instant=new Date('2026-09-30T00:00:00Z');await page.clock.install({time:instant});await page.clock.pauseAt(instant);
+ const icon=await page.request.get('http://localhost:8765/basketball/favicon-32.png');assert.equal(icon.status(),200);
  const response=page.waitForResponse(r=>r.url().endsWith('backboard-reference.png'));
  await page.goto('http://localhost:8765/basketball/');assert.equal((await response).status(),200);
  const score=async id=>Number(await page.locator(id).textContent());
@@ -48,10 +51,10 @@ const {chromium}=require('playwright');
  async function start(){await page.locator('#start').click();shots.fill(0);}
  async function mouseShot(lane,{dy=240,duration=350,correctAim=true,capture=false}={}){
   const box=await page.locator('#court').boundingBox(),origin=rackX(lane,shots[lane]);
-  const point=(x,y)=>({x:box.x+x*box.width/800,y:box.y+y*box.height/800});
-  const dx=correctAim?(HOOPS[lane]-origin)/1.243:120,a=point(origin,684);
+  const point=(x,y)=>({x:box.x+x*box.width/800,y:box.y+y*box.height/COURT_HEIGHT});
+  const dx=correctAim?(HOOPS[lane]-origin)/1.243:120,a=point(origin,RACK_Y);
   await page.mouse.move(a.x,a.y);await page.mouse.down();
-  for(let i=1;i<=14;i++){await page.clock.runFor(duration/14);const p=point(origin+dx*i/14,684-dy*i/14);await page.mouse.move(p.x,p.y);}
+  for(let i=1;i<=14;i++){await page.clock.runFor(duration/14);const p=point(origin+dx*i/14,RACK_Y-dy*i/14);await page.mouse.move(p.x,p.y);}
   if(capture)await page.screenshot({path:'/tmp/hoops-desktop-drag.png',fullPage:true});
   await page.mouse.up();if(dy>=28)shots[lane]++;
   await page.clock.runFor(1250);
@@ -73,7 +76,7 @@ const {chromium}=require('playwright');
  await page.keyboard.down('w');await page.keyboard.down('ArrowUp');await page.clock.runFor(450);await page.keyboard.up('w');await page.keyboard.up('ArrowUp');
  await page.clock.runFor(2200);assert.equal(await score('#p1'),1);assert.equal(await score('#p2'),1);
  await start();await page.keyboard.press('w');await page.clock.runFor(2200);assert.equal(await score('#p1'),0);
- const box=await page.locator('#court').boundingBox();await page.mouse.move(box.x+584*box.width/800,box.y+684*box.height/800);await page.mouse.down();await page.clock.runFor(450);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up();assert.match(await page.locator('#accuracy1').textContent(),/^0\/0/);
+ const box=await page.locator('#court').boundingBox();await page.mouse.move(box.x+584*box.width/800,box.y+RACK_Y*box.height/COURT_HEIGHT);await page.mouse.down();await page.clock.runFor(450);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up();assert.match(await page.locator('#accuracy1').textContent(),/^0\/0/);
  await page.locator('#sound').click();assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');await page.locator('#sound').click();
  await page.reload();assert.equal(await score('#best0'),5);await page.clock.runFor(32);await page.screenshot({path:'/tmp/hoops-desktop.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -83,13 +86,13 @@ const {chromium}=require('playwright');
  await mobile.clock.install({time:instant});await mobile.clock.pauseAt(instant);
  await mobile.goto('http://localhost:8765/basketball/');await mobile.locator('#start').tap();
  const rect=await mobile.locator('#court').boundingBox(),session=await mobile.context().newCDPSession(mobile);
- const touch=(x,y)=>({x:rect.x+x*rect.width/800,y:rect.y+y*rect.height/800});
- await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(584,684)]});
- for(let i=1;i<=14;i++){await mobile.clock.runFor(25);await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(584,684-240*i/14)]});}
+ const touch=(x,y)=>({x:rect.x+x*rect.width/800,y:rect.y+y*rect.height/COURT_HEIGHT});
+ await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(584,RACK_Y)]});
+ for(let i=1;i<=14;i++){await mobile.clock.runFor(25);await session.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[touch(584,RACK_Y-240*i/14)]});}
  await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await mobile.clock.runFor(2300);assert.equal(Number(await mobile.locator('#p2').textContent()),1);
  // Render sound events offline: distinct envelopes, non-silent, no clipping.
  const soundCheck=await page.evaluate(async()=>{
-  const{CourtAudio}=await import('./sound.mjs?v=4'),summary={};
+  const{CourtAudio}=await import('./sound.mjs?v=5'),summary={};
   for(const type of ['swish','net','rim','board','bounce']){
    const context=new OfflineAudioContext(2,44100*.6,44100),sound=new CourtAudio(context);sound.enabled=true;sound.play(type,.8,.4);
    const buffer=await context.startRendering(),data=buffer.getChannelData(0);let energy=0,peak=0;for(const value of data){energy+=value*value;peak=Math.max(peak,Math.abs(value));}

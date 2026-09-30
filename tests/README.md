@@ -118,3 +118,10 @@ preview/physics consistency, net settling, multi-axis spin, keyboard fallback,
 scoring/multipliers and saved statistics. Physics checks run at 30/60/144 fps.
 Offline audio renders verify each material effect is non-silent and unclipped.
 Desktop drag, net-entry and mobile screenshots support visual review.
+
+The court is 800 × 960 logical units, with a longer ball return. Ball radius is
+52 units; the rendered rim radius is 64 units, with the physics ring scaled to
+match. Shots reach hoop depth in roughly 0.9 seconds. Favicon PNGs at 32 and
+192 pixels extract the Copirite wordmark and pink ball from the supplied image.
+Bounce audio adds irregular broadband contact noise and compressed rubber-body
+resonance rather than relying on a clean sliding tone.

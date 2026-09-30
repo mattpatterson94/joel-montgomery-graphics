@@ -2,10 +2,14 @@
 // use world units; multiply depth by 700 for collision distances and velocities.
 export const HOOPS = [216, 584];
 export const RIM_Y = 366;
-export const RIM_HEIGHT = (470 - RIM_Y) / .6;
-export const GRAVITY = 1800;
-export const BALL_RADIUS = 40;
-const RIM_RADIUS = 82, CONTACT_RADIUS = BALL_RADIUS + 4;
+export const COURT_HEIGHT = 960;
+export const RACK_Y = 844;
+export const SHOT_RATE = 1.2;
+export const RIM_HEIGHT = (510 - RIM_Y) / .6;
+export const GRAVITY = 1800 * SHOT_RATE * SHOT_RATE;
+export const BALL_RADIUS = 52;
+export const RIM_RADIUS = 64 / .6;
+const CONTACT_RADIUS = BALL_RADIUS + 4;
 export const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 export const remaining = (deadline, now) => Math.max(0, (deadline - now) / 1000);
 export const pointsAt = seconds => seconds <= 0 ? 0 : seconds <= 10 ? 3 : seconds <= 20 ? 2 : 1;
@@ -19,13 +23,15 @@ export function rackX(lane, shot) {
 }
 export function project(x, h, z) {
   const scale = 1 / (1 + Math.max(0, z) * 2 / 3);
-  return {x:400+(x-400)*scale, y:760-290*z-h*scale, radius:BALL_RADIUS*scale, scale};
+  return {x:400+(x-400)*scale, y:920-410*z-h*scale, radius:BALL_RADIUS*scale, scale};
 }
 export const hoopWorldX = lane => 400+(HOOPS[lane]-400)/.6;
 export function makeBall(lane, aim, power, round, origin=HOOPS[lane]) {
   // No automatic aiming: straight ahead is a real miss from the starting rack.
-  return {lane, x:origin, h:76, z:0, vx:clamp(aim*1.5,-600,600),
-    vh:clamp(power*3.85173,500,1380), vz:1/1.1, age:0, scored:false,
+  const flightTime=1.1/SHOT_RATE;
+  const nominalVelocity=(RIM_HEIGHT-76+GRAVITY*flightTime*flightTime/2)/flightTime;
+  return {lane, x:origin, h:76, z:0, vx:clamp(aim*1.5,-600,600)*SHOT_RATE,
+    vh:nominalVelocity+(clamp(power,130,358)-280)*3.85173*SHOT_RATE, vz:1/flightTime, age:0, scored:false,
     round, bounces:0, rimHits:0, bankHits:0, grounded:false, landed:false,
     spin:[.45,.2,-.65], omega:[-6,1.2,-aim*.02], events:[]};
 }
@@ -37,7 +43,7 @@ export function stepBall(ball, dt) {
     const oldH=ball.h, oldX=ball.x, oldZ=ball.z;
     ball.x+=ball.vx*step; ball.z+=ball.vz*step; ball.age+=step;
     for(let axis=0;axis<3;axis++)ball.spin[axis]+=ball.omega[axis]*step;
-    if(ball.scored&&ball.h>RIM_HEIGHT-120&&ball.vh<0)ball.vh*=Math.exp(-3*step);
+    if(ball.scored&&ball.h>RIM_HEIGHT-120&&ball.vh<0)ball.vh*=Math.exp(-2.2*step);
     if(!ball.grounded) {ball.h+=ball.vh*step-GRAVITY*step*step/2; ball.vh-=GRAVITY*step;}
     // Sphere against the board, accounting for the ball's radius and board width.
     const boardLimit=1.16-BALL_RADIUS/700;
@@ -54,7 +60,7 @@ export function stepBall(ball, dt) {
         for(let lane=0;lane<2;lane++) {
           if(Math.hypot(x-hoopWorldX(lane),(z-1)*700)<RIM_RADIUS-CONTACT_RADIUS) {
             ball.entry={x:x-hoopWorldX(lane),speed:-ball.vh,swish:ball.rimHits===0&&ball.bankHits===0,age:ball.age};
-            ball.scored=true; basket=lane; ball.z=1; ball.vz=0;ball.vh*=.55;
+            ball.scored=true; basket=lane; ball.z=1; ball.vz=0;ball.vh*=.68;
             ball.x=hoopWorldX(lane)+(x-hoopWorldX(lane))*.5; ball.vx*=.15;
             break;
           }
@@ -86,7 +92,7 @@ export function stepBall(ball, dt) {
     if(ball.scored&&!ball.netExited&&ball.h<RIM_HEIGHT-115){ball.netExited=true;ball.events.push({type:'net',strength:.4});}
     if(ball.h<BALL_RADIUS && ball.vh<0) {
       if(-ball.vh>90)ball.events.push({type:'bounce',strength:clamp(-ball.vh/650,.1,1)});
-      ball.h=BALL_RADIUS; ball.vh*=-.42; ball.vx*=.65; ball.vz=-.45;
+      ball.h=BALL_RADIUS; ball.vh*=-.42; ball.vx*=.65; ball.vz=-.45*SHOT_RATE;
       ball.bounces++; ball.landed=true;ball.omega=[ball.vz*700/BALL_RADIUS,ball.omega[1]*.5,-ball.vx/BALL_RADIUS];
       if(ball.vh<70 || ball.bounces>=4) {ball.vh=0;ball.grounded=true;}
     }

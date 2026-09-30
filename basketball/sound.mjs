@@ -36,16 +36,35 @@ export class CourtAudio {
     gain.gain.setValueAtTime(volume,t);gain.gain.exponentialRampToValueAtTime(.0001,t+decay);
     oscillator.connect(gain);gain.connect(output);oscillator.start(t);oscillator.stop(t+decay);nodes.push(oscillator,gain);sources.push(oscillator);
   };
+  const rubberImpact=()=>{
+    const duration=.24,buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*duration),ctx.sampleRate),data=buffer.getChannelData(0);
+    const pitch=.9+Math.random()*.2,rate=ctx.sampleRate;let low=0,mid=0,phase=0,previous=0;
+    for(let i=0;i<data.length;i++){
+      const t=i/rate,white=Math.random()*2-1;
+      low+=.065*(white-low);mid+=.3*(white-mid);
+      // A noisy, compressed membrane thump, a short contact slap, then a little
+      // fabric/cage chatter. Each impact varies without becoming a pitched beep.
+      phase+=2*Math.PI*(83+37*Math.exp(-t*100))*pitch/rate;
+      const membrane=(Math.sin(phase)*.24+Math.sin(phase*1.73+mid*2)*.065)*Math.exp(-t*31);
+      const thud=low*3.4*Math.exp(-t*29);
+      const slap=(white-mid)*.65*Math.exp(-t*240);
+      const rub=(mid-previous)*1.2*Math.exp(-t*24);
+      const chatter=t>.025?white*.065*Math.exp(-(t-.025)*48)*(1+Math.sin(t*490))*.5:0;
+      data[i]=Math.tanh((membrane+thud+slap+rub+chatter)*2.1)*.8;previous=mid;
+    }
+    const source=ctx.createBufferSource();source.buffer=buffer;source.connect(output);source.start(now);nodes.push(source);sources.push(source);
+  };
   if(type==='rim'){
     noise(0,.026,2600,.6,'highpass');mode(690,.12,.48);mode(1171,.085,.23);mode(2049,.06,.12);
   }else if(type==='board'){
-    noise(0,.07,520,1,'lowpass');mode(138,.11,.85,.82);mode(291,.055,.23);
+    noise(0,.018,1700,.8,'highpass');noise(0,.09,520,1.1,'lowpass');mode(138,.085,.5,.82);mode(291,.045,.14);noise(.022,.09,950,.24,'bandpass');
   }else if(type==='bounce'){
-    noise(0,.04,800,.45,'lowpass');mode(105,.15,.85,.58);mode(218,.048,.1);
+    rubberImpact();
   }else if(type==='swish'||type==='net'){
     const clean=type==='swish';noise(0,clean?.27:.16,clean?1550:1100,clean?.8:.55,'bandpass',.025);
     noise(.045,clean?.2:.12,3100,.25,'highpass',.018);
     if(clean)noise(.08,.1,640,.18,'lowpass',.008);
+    for(let i=0;i<3;i++)noise(.035+i*.037+Math.random()*.01,.025,1800+Math.random()*1200,.09,'bandpass',.004);
   }else if(type==='release'){
     noise(0,.06,900,.2,'bandpass',.01);
   }else if(type==='end'){

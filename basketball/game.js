@@ -1,8 +1,8 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX} from './physics.mjs?v=4';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=4';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=4';
-import {drawNet} from './net.mjs?v=4';
-import {CourtAudio} from './sound.mjs?v=4';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=5';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=5';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=5';
+import {drawNet} from './net.mjs?v=5';
+import {CourtAudio} from './sound.mjs?v=5';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 const timer = document.querySelector('#timer'), scoreEls = [document.querySelector('#p1'),document.querySelector('#p2')];
 const phase = document.querySelector('#phase'), multiplier = document.querySelector('#multiplier');
@@ -24,17 +24,17 @@ soundButton.addEventListener('click',()=>{
 });
 function stats(){statsEls.forEach((els,i)=>{els.accuracy.textContent=`${makes[i]}/${attempts[i]} · ${attempts[i]?Math.round(makes[i]/attempts[i]*100):0}%`;els.streak.textContent=String(streaks[i]);els.best.textContent=String(best[i]);});}
 stats();
-const board = document.createElement('canvas'); board.width = 800; board.height = 800;
+const board = document.createElement('canvas'); board.width = 800; board.height = COURT_HEIGHT;
 const b = board.getContext('2d');
 const resolution=Math.min(devicePixelRatio||1,2);
-canvas.width=canvas.height=board.width=board.height=800*resolution;
+canvas.width=board.width=800*resolution;canvas.height=board.height=COURT_HEIGHT*resolution;
 ctx.scale(resolution,resolution);b.scale(resolution,resolution);
 function path(c, coords, fill, stroke, width=1) {c.beginPath();coords.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(fill){c.closePath();c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 function ellipse(c,x,y,rx,ry,fill,stroke,width=1){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 const artwork = new Image();
 artwork.src = new URL('./backboard-reference.png', import.meta.url).href;
 function backboard(){
- b.clearRect(0,0,800,800);
+ b.clearRect(0,0,800,COURT_HEIGHT);
  // Display the actual left-hand artwork from the supplied reference at its native
  // aspect ratio. Clip the white corners, without redrawing any of the print design.
  if(artwork.complete && artwork.naturalWidth){
@@ -42,17 +42,17 @@ function backboard(){
   const sourceScale=artwork.naturalWidth/1920;
   b.drawImage(artwork,155*sourceScale,213*sourceScale,746*sourceScale,443*sourceScale,36,24,728,432);b.restore();
  }
- const ramp=b.createLinearGradient(0,456,0,780);ramp.addColorStop(0,'#15161a');ramp.addColorStop(1,'#303034');
- path(b,[[47,456],[753,456],[774,773],[26,773]],ramp);
- for(const x of HOOPS){b.strokeStyle='#ffffff32';b.lineWidth=2;b.beginPath();b.moveTo(x-38,490);b.lineTo(x-72,591);b.quadraticCurveTo(x,655,x+72,591);b.lineTo(x+38,490);b.stroke();ellipse(b,x,580,34,11,null,'#ffffff28',2);}
+ const ramp=b.createLinearGradient(0,456,0,940);ramp.addColorStop(0,'#15161a');ramp.addColorStop(1,'#303034');
+ path(b,[[47,456],[753,456],[774,933],[26,933]],ramp);
+ for(const x of HOOPS){b.strokeStyle='#ffffff32';b.lineWidth=2;b.beginPath();b.moveTo(x-38,530);b.lineTo(x-72,700);b.quadraticCurveTo(x,785,x+72,700);b.lineTo(x+38,530);b.stroke();ellipse(b,x,690,34,11,null,'#ffffff28',2);}
  for(const flip of [1,-1]){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
-  path(b,[[40,166],[47,456],[26,773],[7,744]],'#ffffff04');
-  for(let t=0;t<=1;t+=.09){path(b,[[40+7*t,166+290*t],[7+19*t,744+29*t]],null,'#aaa3ae35');path(b,[[40-33*t,166+578*t],[47-21*t,456+317*t]],null,'#aaa3ae35');}
-  path(b,[[40,166],[7,744],[26,773]],null,'#8e8d93',4);b.restore();
+  path(b,[[40,166],[47,456],[26,933],[7,904]],'#ffffff04');
+  for(let t=0;t<=1;t+=.09){path(b,[[40+7*t,166+290*t],[7+19*t,904+29*t]],null,'#aaa3ae35');path(b,[[40-33*t,166+738*t],[47-21*t,456+477*t]],null,'#aaa3ae35');}
+  path(b,[[40,166],[7,904],[26,933]],null,'#8e8d93',4);b.restore();
  }
- path(b,[[26,775],[774,775]],null,'#aaa7ad',7);
- b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],758);b.fillText('P2',HOOPS[1],758);
+ path(b,[[26,935],[774,935]],null,'#aaa7ad',7);
+ b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],918);b.fillText('P2',HOOPS[1],918);
 }
 artwork.addEventListener('load',backboard);
 artwork.addEventListener('error',()=>{message.textContent='Backboard image could not load. Reload the page to try again.';});
@@ -84,12 +84,12 @@ start.addEventListener('click',()=>{
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
  audio.unlock();message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
-function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*800/r.height};}
+function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*COURT_HEIGHT/r.height};}
 function laneBusy(lane){return [...drags.values()].some(d=>d.lane===lane)||keys.has(lane?'arrowup':'w');}
 canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=coords(e),lane=p.x<400?0:1,origin=rackX(lane,rackShots[lane]);
- if(Math.hypot(p.x-origin,p.y-684)>72||laneBusy(lane)||performance.now()-cooldown[lane]<550)return;
+ if(Math.hypot(p.x-origin,p.y-RACK_Y)>72||laneBusy(lane)||performance.now()-cooldown[lane]<550)return;
  e.preventDefault();audio.unlock();canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
  const now=performance.now();drags.set(e.pointerId,{start:p,end:p,lane,origin,samples:[{...p,t:now}]});
 });
@@ -138,19 +138,19 @@ function controls(now,dt){
   const x=rackX(lane,rackShots[lane]);
   const held=keys.get(lane?'arrowup':'w'),drag=[...drags.values()].find(d=>d.lane===lane);
   const ready=clamp((now-cooldown[lane])/550,0,1);
-  ellipse(ctx,x,730,44*ready,10*ready,'#00000050');
+  ellipse(ctx,x,890,56*ready,12*ready,'#00000050');
   if(drag){
    const sample=gestureBall(drag,now);drawPreview(sample);
    const pose=heldPosition(drag),p=project(pose.x,pose.h,0);
    const dx=drag.end.x-drag.start.x,dy=drag.start.y-drag.end.y;
    if(Math.hypot(drag.end.x-p.x,drag.end.y-p.y)>12)path(ctx,[[p.x,p.y],[drag.end.x,drag.end.y]],null,'#ffffff22',1);
-   drawSphere(ctx,p.x,p.y,40,[.45-dy*.008,.2+dx*.01,-.65],drag);
+   drawSphere(ctx,p.x,p.y,BALL_RADIUS,[.45-dy*.008,.2+dx*.01,-.65],drag);
   }else{
    if(held!==undefined)drawPreview(makeBall(lane,aim[lane],chargePower(now-held),-1,x));
-   if(hover&&Math.hypot(hover.x-x,hover.y-684)<72&&ready===1)ellipse(ctx,x,684,46,46,null,'#ffffff38',1);
-   drawSphere(ctx,x,684,40*ready,[.45,.2+rackShots[lane]*.28,-.65],rackOwners[lane]);
+   if(hover&&Math.hypot(hover.x-x,hover.y-RACK_Y)<72&&ready===1)ellipse(ctx,x,RACK_Y,BALL_RADIUS+6,BALL_RADIUS+6,null,'#ffffff38',1);
+   drawSphere(ctx,x,RACK_Y,BALL_RADIUS*ready,[.45,.2+rackShots[lane]*.28,-.65],rackOwners[lane]);
    ctx.font='10px Arial';ctx.textAlign='center';ctx.fillStyle='#a69aa5';
-   ctx.fillText(held!==undefined?'RELEASE TO THROW':matchMedia('(pointer: coarse)').matches?'SWIPE UP TO SHOOT':'DRAG UP & RELEASE',x,627);
+   ctx.fillText(held!==undefined?'RELEASE TO THROW':matchMedia('(pointer: coarse)').matches?'SWIPE UP TO SHOOT':'DRAG UP & RELEASE',x,767);
   }
  }
 }
@@ -183,7 +183,7 @@ function frame(now){
  }
  }
  balls=balls.filter(item=>item.age<5&&!(item.grounded&&item.z===0)&&item.x>-400&&item.x<1200);
- ctx.clearRect(0,0,800,800);ctx.drawImage(board,0,0,800,800);
+ ctx.clearRect(0,0,800,COURT_HEIGHT);ctx.drawImage(board,0,0,800,COURT_HEIGHT);
  for(const item of balls){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
  const ordered=[...balls].sort((a,b)=>b.z-a.z);
  // Balls in front of the hoop must cover its rim/net on the way up. Balls

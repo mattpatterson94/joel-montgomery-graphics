@@ -1,4 +1,4 @@
-import {clamp, makeBall, GRAVITY} from './physics.mjs?v=4';
+import {clamp, makeBall, GRAVITY, SHOT_RATE} from './physics.mjs?v=5';
 
 // Pointer coordinates are expressed in the same 800-unit court space on every
 // screen. A short, time-weighted velocity window avoids device/event-rate bias.
@@ -30,7 +30,7 @@ export function gestureBall(gesture, now, round=-1) {
   ball.h=release.h;
   // Projection correction keeps a vertical screen gesture vertical in view.
   // This uses the camera only, never a hoop position or an aim snap.
-  ball.vx=(release.x-400)*(2/3)*ball.vz+clamp(dx*1.05,-500,500);
+  ball.vx=(release.x-400)*(2/3)*ball.vz+clamp(dx*1.05,-500,500)*SHOT_RATE;
   ball.vh-=(release.h-76)*ball.vz;
   ball.spin=[.45-dy*.008,.2+dx*.01,-.65];
   ball.omega=[-5.5-speed/550,ball.vx*.007, -dx*.018];
@@ -41,6 +41,6 @@ export function previewArc(ball) {
   // Only the first portion: the guide communicates launch direction/arc,
   // leaving the actual landing to the player's judgement.
   const points=[];
-  for(let t=.035;t<=.62;t+=.055)points.push({x:ball.x+ball.vx*t,h:ball.h+ball.vh*t-GRAVITY*t*t/2,z:ball.z+ball.vz*t});
+  for(let t=.035;t<=.62/SHOT_RATE;t+=.055/SHOT_RATE)points.push({x:ball.x+ball.vx*t,h:ball.h+ball.vh*t-GRAVITY*t*t/2,z:ball.z+ball.vz*t});
   return points;
 }

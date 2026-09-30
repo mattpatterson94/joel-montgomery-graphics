@@ -1,398 +1,233 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const dropArea = document.getElementById('drop-area');
-    const fileInput = document.getElementById('file-input');
-    const submitButtonContent = document.getElementById('submit-button-content');
-    const submitButton = document.getElementById('submit-button');
-    const alertMessageSvg = document.getElementById('alert-message-svg-fail');
-    const alertMessageNonSvg = document.getElementById('alert-message-non-svg');
+/* Client-only SVG conversion. No uploaded markup is inserted into the page. */
+(() => {
+  'use strict';
+  const NS = 'http://www.w3.org/2000/svg';
+  const XLINK = 'http://www.w3.org/1999/xlink';
+  const $ = id => document.getElementById(id);
+  const number = value => String(Number(Number(value).toFixed(6)));
+  const displayNumber = value => String(Number(Number(value).toFixed(3)));
+  const serialise = node => new XMLSerializer().serializeToString(node);
+  const allowed = new Set('svg g symbol marker defs style title desc metadata path polygon polyline rect circle ellipse line use linearGradient radialGradient stop clipPath mask pattern filter feFlood feOffset feComposite feColorMatrix feGaussianBlur feBlend feMerge feMergeNode feComponentTransfer feFuncR feFuncG feFuncB feFuncA feMorphology'.split(' '));
+  let model = null, filename = 'element', generation = 0, advanced = false;
+  const selected = new Set();
+  const shapeSelector = 'path,polygon,polyline,rect,circle,ellipse';
+  const definitionSelector = 'defs,clipPath,mask,pattern,symbol,marker';
 
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    // Highlight the drop area when item is dragged over it
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => {
-            dropArea.classList.add('highlight');
-        }, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, () => {
-            dropArea.classList.remove('highlight');
-        }, false);
-    });
-
-    // Handle dropped files
-    dropArea.addEventListener('drop', (e) => {
-        const files = e.dataTransfer.files;
-        handleFiles(files);
-    });
-
-    // Handle file input change
-    fileInput.addEventListener('change', (e) => {
-        const files = e.target.files;
-        handleFiles(files);
-    });
-
-    // Trigger file input when clicking the drop area
-    dropArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    function handleFiles(files) {
-        for (const file of files) {
-            const originalFileName = file.name;
-            const fileExtension = originalFileName.split('.').pop().toLowerCase();
-            const fileType = file.type;
-
-            if (fileExtension !== 'svg' || fileType !== 'image/svg+xml') {
-                alertMessageNonSvg.classList.remove('advanced-toggle');
-                console.log('failed');
-
-                setTimeout(() => {
-                    alertMessageNonSvg.classList.add('advanced-toggle');
-                }, 3000);
-                console.log('Error: Only SVG files are allowed.');
-                continue;
-            }
-
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-                const svgText = e.target.result;
-                processFiles(svgText, originalFileName);
-            };
-
-            reader.readAsText(file);
-        }
-    }
-
-    function processFiles(svgText, originalFileName) {
-        let hasError = false;
-
-        try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(svgText, 'image/svg+xml');
-            const svgElement = doc.querySelector('svg');
-
-            if (!svgElement) {
-                throw new Error('SVG element not found.');
-            }
-
-            // Create an SVG container for accurate bounding box calculation
-            const container = document.createElement('div');
-            container.style.position = 'absolute';
-            container.style.visibility = 'hidden';
-            document.body.appendChild(container);
-            container.innerHTML = svgText;
-
-            const svgContainer = container.querySelector('svg');
-
-            // Ensure that elements are fully rendered before calculating bbox
-            requestAnimationFrame(() => {
-                const path = svgContainer.querySelector('path');
-                const polygon = svgContainer.querySelector('polygon');
-
-                let xcoordsvg, ycoordsvg, widthsvg, heightsvg;
-
-                if (path) {
-                    const pathBbox = path.getBBox();
-                    xcoordsvg = pathBbox.x;
-                    ycoordsvg = pathBbox.y;
-                    widthsvg = pathBbox.width;
-                    heightsvg = pathBbox.height;
-                } 
-
-                if (polygon) {
-                    const polygonBbox = polygon.getBBox();
-                    xcoordsvg = polygonBbox.x;
-                    ycoordsvg = polygonBbox.y;
-                    widthsvg = polygonBbox.width;
-                    heightsvg = polygonBbox.height;
-                }
-
-                // Clean up container
-                document.body.removeChild(container);
-
-
-                if (svgElement) {
-                    // Remove Style Defs
-                    const defs = svgElement.querySelector('defs');
-                    let defsPresent = false;
-                    if (defs) {
-                        defsPresent = true;
-                        svgElement.removeChild(defs);
-                    }
-
-                    wrapInGroup(svgElement);
-                
-                    let layer1Group = svgElement.querySelector('g[id]');
-                
-                    if (layer1Group) {
-                        // Extract the inner HTML of the <g> element
-                        let innerContent = layer1Group.innerHTML;
-                
-                        // Replace the <g> element with <clipPath> element
-                        let clipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
-                        clipPathElement.setAttribute('id', 'clippath');
-                        clipPathElement.innerHTML = innerContent;
-                
-                        // Replace the original <g> with the new <clipPath>
-                        layer1Group.parentNode.replaceChild(clipPathElement, layer1Group);
-                
-                        // Find the <path> or <polygon> element inside the new <clipPath>
-                        let shapeElement = clipPathElement.querySelector('path, polygon');
-                        if (shapeElement) {
-                            // Remove style attributes
-                            shapeElement.removeAttribute('fill');
-                            shapeElement.removeAttribute('class');
-                            shapeElement.removeAttribute('stroke');
-
-                
-                            // Create a new <g> element with specified properties
-                            let newGElement = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                            newGElement.setAttribute('clip-path', 'url(#clippath)');
-                            newGElement.setAttribute('id', 'clip_1');
-                
-                            // Insert the new <g> element after the <clipPath> element
-                            clipPathElement.parentNode.insertBefore(newGElement, clipPathElement.nextSibling);
-                
-                            // Create a new <image> element with specified properties
-                            let imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-                            imageElement.setAttribute('overflow', 'visible');
-                            imageElement.setAttribute('x', xcoordsvg);
-                            imageElement.setAttribute('y', ycoordsvg);
-                            imageElement.setAttribute('width', widthsvg);
-                            imageElement.setAttribute('height', heightsvg);
-                            imageElement.setAttribute('xlink:href', '');
-                
-                            // Append the new <image> element inside the <g id="clip_1">
-                            newGElement.appendChild(imageElement);
-                        }
-                    }
-
-                    // Add xmlns:xlink attribute to <svg>
-                    svgElement.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-                
-                    // ALWAYS wrap <clipPath> and <g id="clip_1"> inside a new <g>
-                    (function() {
-                        const clipPath = svgElement.querySelector('clipPath');
-                        const clipGroup = svgElement.querySelector('g[id="clip_1"]');
-
-                        if (!clipPath && !clipGroup) return;
-
-                        // Create wrapper <g>
-                        const wrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-                        if (clipPath) {
-                            svgElement.removeChild(clipPath);
-                            wrapper.appendChild(clipPath);
-                        }
-                        if (clipGroup) {
-                            svgElement.removeChild(clipGroup);
-                            wrapper.appendChild(clipGroup);
-                        }
-
-                        svgElement.appendChild(wrapper);
-                    })();
-
-                }
-                
-                // Generate the modified SVG output
-                const serializer = new XMLSerializer();
-                let outputHTML = serializer.serializeToString(doc);
-
-                // Manually replace both opening and closing <clippath> tags with <clipPath>
-                outputHTML = outputHTML
-                .replaceAll('clippath>', 'clipPath>')
-                .replaceAll('<clippath', '<clipPath');
-
-                document.getElementById('output').value = outputHTML;
-
-                // Modify the original filename to append "-processed"
-                const baseName = originalFileName.replace(/\.[^/.]+$/, ""); // Remove file extension
-                const processedFileName = `${baseName}-processed.svg`;
-
-                // Create a Blob and a download link
-                const blob = new Blob([outputHTML], { type: 'image/svg+xml' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = processedFileName;
-                a.click();
-                URL.revokeObjectURL(url);
-
-                submitButtonContent.classList.toggle('clicked');
-                setTimeout(() => {
-                    submitButtonContent.classList.toggle('clicked');
-                }, 1000);
-            });
-
-        } catch (error) {
-            hasError = true;
-            console.error('Error processing SVG:', error);
-            alertMessageSvg.classList.remove('advanced-toggle');
-            setTimeout(() => {
-                alertMessageSvg.classList.add('advanced-toggle');
-            }, 3000);
-        }
-    }
-
-    // Function to wrap elements in <g> if not already wrapped and assign an ID to the new <g>
-    function wrapInGroup(svgElement) {
-        const elements = svgElement.querySelectorAll('path, polygon');
-  
-        elements.forEach((element, index) => {
-          if (element.parentElement.tagName.toLowerCase() !== 'g') {
-            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            g.id = `Layer_${index + 1}`;
-            element.parentNode.insertBefore(g, element);
-            g.appendChild(element);
-          }
-        });
-      }
-});
-
-
-$(document).ready(function() {
-    // Initial button state based on textarea content
-    toggleButtonState();
-    toggleCopyButtonState();
-
-    // Event listener for textarea input to enable/disable the button
-    $('#input').on('input', function() {
-        toggleButtonState();
-    });
-    $('#output').on('input', function() {
-        toggleCopyButtonState();
-    });
-
-    // Function to toggle button state
-    function toggleButtonState() {
-        if ($('#input').val().trim() === '') {
-            $('#submit-button').prop('disabled', true);
-            $('#submit-button-2').prop('disabled', true);
-        } else {
-            $('#submit-button').prop('disabled', false);
-            $('#submit-button-2').prop('disabled', false);
-        }
-    }
-
-    // Function to toggle Copy button state
-    function toggleCopyButtonState() {
-        if ($('#output').val().trim() === '') {
-            $('#copy-button').prop('disabled', true);
-        } else {
-            $('#copy-button').prop('disabled', false);
-        }
-    }
-
-    // Function to toggle advanced mode
-    $('#mode-switcher').click(function() {
-        const element = document.getElementById('inputs-hider');
-        const element2 = document.getElementById('buttons-simple');
-        const element3 = document.getElementById('buttons-advanced');
-        const element4 = document.getElementById('simple-explainer');
-        const element5 = document.getElementById('advanced-explainer');
-        const element6 = document.getElementById('upload-hider');
-
-        element.classList.remove('advanced-toggle');
-        element2.classList.add('advanced-toggle');
-        element3.classList.remove('advanced-toggle');
-        element4.classList.add('advanced-toggle');
-        element5.classList.remove('advanced-toggle');
-        element6.classList.add('advanced-toggle');
-
-        toggleCopyButtonState()
-    });
-
-    $('#mode-switcher-2').click(function() {
-        const element = document.getElementById('inputs-hider');
-        const element2 = document.getElementById('buttons-simple');
-        const element3 = document.getElementById('buttons-advanced');
-        const element4 = document.getElementById('simple-explainer');
-        const element5 = document.getElementById('advanced-explainer');
-        const element6 = document.getElementById('upload-hider');
-
-        element.classList.add('advanced-toggle');
-        element2.classList.remove('advanced-toggle');
-        element3.classList.add('advanced-toggle');
-        element4.classList.remove('advanced-toggle');
-        element5.classList.add('advanced-toggle');
-        element6.classList.remove('advanced-toggle');
-    });
-
-
-    // Function for Advanced Submit button
-    $('#submit-button-2').click(function() {
-        let hasError = false;
-
-/*         try { */
-            const input = $('#input').val();
-            let output = $.parseHTML(input);
-        
-            let defs = $(output).find('defs');
-        
-            $(output).find('clipPath').html(defs.html());
-            $(output).find('clipPath').attr("id", "SVGID_2_");
-            $(output).find('defs').remove();
-            let rect =  $(output).find('g').find('rect');
-            let width = rect.attr('width');
-            let height = rect.attr('height');
-            $(output).find('g').find('rect').remove();
-            $(output).find('g').append('<g id="clip_1" clip-path="url(#SVGID_2_)"></g>')
-            $(output).find('g').find('g').html('<image1 overflow="visible" x="0" y="0" width="'+width+'" height="'+height+'" xlink:href=""/>');
-            let outputHTML = $(output)
-                .find('g')
-                .parent()
-                .prop('outerHTML')
-                .replaceAll('image1', 'image');
-            $('#output').val(outputHTML);
-            toggleCopyButtonState();
-/*         } catch (error) {
-            hasError = true;
-        } */
-
-        if (!hasError) {
-        } else {
-            const element1 = document.getElementById('alert-message-simple');
-            element1.classList.remove('advanced-toggle');
- 
-            // toggle button unlclicked fail after delay
-            setTimeout(() => {
-                element1.classList.add('advanced-toggle');
-            }, 3000); // Delay in milliseconds
-        }
-    });
-});
-
-
-function copyOutput() {
-    // Get the text field
-    let copyText = document.getElementById("output");
-  
-    // Select the text field
-    copyText.select();
-    copyText.setSelectionRange(0, 99999); // For mobile devices
-  
-     // Copy the text inside the text field
-    navigator.clipboard.writeText(copyText.value);
-
-    // toggle button clicked
-    const copyButton = document.getElementById('copy-button-content');
-    copyButton.classList.toggle('clicked');
-
-    // toggle button unlclicked after delay
-    setTimeout(() => {
-        const copyButton = document.getElementById('copy-button-content');
-        copyButton.classList.toggle('clicked');
-    }, 1000); // Delay in milliseconds
+  function svgNode(tag, attributes = {}) {
+    const node = document.createElementNS(NS, tag);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value));
+    return node;
   }
+  function parse(source) {
+    if (source.length > 5 * 1024 * 1024) throw new Error('Please use an SVG smaller than 5 MB.');
+    if (/<!ENTITY/i.test(source)) throw new Error('SVG entity declarations are not supported. Export a plain SVG from Illustrator.');
+    const doc = new DOMParser().parseFromString(source, 'image/svg+xml');
+    const root = doc.documentElement;
+    if (doc.querySelector('parsererror') || root.localName !== 'svg' || root.namespaceURI !== NS) throw new Error('This file is not valid SVG.');
+    const elements = [root, ...root.querySelectorAll('*')];
+    if (elements.length > 15000) throw new Error('This SVG is too complex. Simplify the artwork before converting.');
+    const ids = new Set();
+    for (const el of elements) {
+      if (el.closest('metadata')) { if (el.localName === 'metadata') el.remove(); continue; }
+      if (el.namespaceURI !== NS || !allowed.has(el.localName)) throw new Error(`Unsupported SVG element: ${el.localName}. Outline text, embed vector artwork and expand live effects before exporting.`);
+      if (el.id) { if (ids.has(el.id)) throw new Error(`Duplicate SVG ID: ${el.id}. Export with unique IDs.`); ids.add(el.id); }
+      for (const attr of [...el.attributes]) {
+        const value = attr.value.trim();
+        if (/^on/i.test(attr.localName) || attr.localName === 'base') el.removeAttributeNode(attr);
+        if (attr.localName === 'href' && !/^#[\w:.-]+$/.test(value)) throw new Error('External references are not supported. Keep all artwork inside the SVG.');
+        if (/url\s*\(/i.test(value) && !safeURLs(value)) throw new Error('External SVG resources are not supported.');
+      }
+      if (el.localName === 'style' && (/@|\\|<\/style/i.test(el.textContent) || !safeURLs(el.textContent))) throw new Error('Use local SVG styles without imports or external resources.');
+      if (el.hasAttribute('style') && /@|\\/.test(el.getAttribute('style'))) throw new Error('Unsupported inline SVG style.');
+    }
+    // Remove XML processing instructions, including external stylesheet instructions.
+    return root;
+  }
+  function safeURLs(value) {
+    const urls = [...value.matchAll(/url\s*\(([^)]*)\)/gi)];
+    return urls.every(match => /^['"]?#[\w:.-]+['"]?$/.test(match[1].trim()));
+  }
+  const frameHTML = '<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'"><style>html,body{margin:0;width:100%;height:100%;overflow:hidden}body>svg{display:block;width:100%;height:100%}</style><body></body>';
+  async function loadFrame(frame) {
+    const loaded = new Promise(resolve => frame.addEventListener('load', resolve, {once:true}));
+    frame.srcdoc = frameHTML;
+    await loaded;
+  }
+  async function inspect(source) {
+    const root = parse(source);
+    const vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+    if (vb.length !== 4 || !vb.every(Number.isFinite) || vb[2] <= 0 || vb[3] <= 0) throw new Error('Export the SVG with a valid artboard (viewBox).');
+    const frame = document.createElement('iframe');
+    frame.setAttribute('sandbox', 'allow-same-origin');
+    frame.setAttribute('aria-hidden', 'true');
+    frame.style.cssText = 'position:fixed;left:-100000px;width:1000px;height:1000px;visibility:hidden;pointer-events:none';
+    document.body.append(frame);
+    try {
+      await loadFrame(frame);
+      const live = frame.contentDocument.importNode(root, true);
+      frame.contentDocument.body.append(live);
+      // Resolve source CSS before adding wrappers, without freezing inherited
+      // defaults on definitions (which would change <use> inheritance).
+      const rules = [...live.querySelectorAll('style')].flatMap(el => [...(el.sheet?.cssRules || [])]);
+      const snapshots = [live, ...live.querySelectorAll('*')].map(el => {
+        const declared = new Set([...el.style]);
+        for (const rule of rules) if (rule.selectorText && el.matches(rule.selectorText)) for (const prop of rule.style) declared.add(prop);
+        const computed = frame.contentWindow.getComputedStyle(el);
+        return [el, [...declared].map(prop => [prop, computed.getPropertyValue(prop)])];
+      });
+      for (const [el, values] of snapshots) {
+        if (el.localName === 'style') continue;
+        el.removeAttribute('style');
+        for (const [prop, raw] of values) {
+          const value = raw.replace(/url\(["']?[^)"']*#([\w:.-]+)["']?\)/g, 'url(#$1)');
+          if (value) el.style.setProperty(prop, value);
+        }
+        el.removeAttribute('class');
+        // Never trust selection markers supplied by uploaded files.
+        el.removeAttribute('data-mask-shape');
+      }
+      live.querySelectorAll('style').forEach(el => el.remove());
+      const shapes = [];
+      for (const shape of live.querySelectorAll(shapeSelector)) {
+        if (shape.closest(definitionSelector)) continue;
+        const computed = frame.contentWindow.getComputedStyle(shape);
+        const hidden = [shape, ...ancestors(shape, live)].some(el => {
+          const style = frame.contentWindow.getComputedStyle(el);
+          return style.display === 'none' || Number(style.opacity) === 0;
+        });
+        if (hidden || computed.visibility === 'hidden' || computed.visibility === 'collapse') continue;
+        const index = shapes.length;
+        let reason = '';
+        if (computed.fill === 'none') reason = 'Outline strokes or add a fill to use this shape as a mask.';
+        if (['clip-path','mask','filter'].some(prop => computed.getPropertyValue(prop) !== 'none')) reason = 'Expand this shape’s clipping or effects before using it as a mask.';
+        if (shape.id && [...live.querySelectorAll('use')].some(el => (el.getAttribute('href') || el.getAttributeNS(XLINK,'href')) === '#'+shape.id)) reason = 'Expand linked copies before using their source shape as a mask.';
+        // Measuring a temporary group includes the shape's own transform, while
+        // remaining in the parent's coordinates. Ancestor transforms stay intact.
+        const holder = svgNode('g');shape.replaceWith(holder);holder.append(shape);
+        const bounds = holder.getBBox();holder.replaceWith(shape);
+        const box = {x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height};
+        if (!Object.values(box).every(Number.isFinite) || box.width <= 0 || box.height <= 0) reason = 'This shape has no filled area.';
+        const clipRule = computed.getPropertyValue('clip-rule') === 'evenodd' || computed.fillRule === 'evenodd' ? 'evenodd' : 'nonzero';
+        shape.setAttribute('data-mask-shape', index);
+        shapes.push({index, label:shape.id || `${shape.localName} ${index+1}`, box, clipRule, reason});
+      }
+      if (!shapes.length) throw new Error('No selectable vector shapes found. Outline text and expand symbols or linked copies before exporting.');
+      const hasOtherArtwork = [...live.querySelectorAll('use,line')].some(el => !el.closest(definitionSelector));
+      return {root:live.cloneNode(true), shapes, hasOtherArtwork};
+    } finally {frame.remove();}
+  }
+  function ancestors(el, root) {
+    const result=[];
+    for(let parent=el.parentElement;parent;parent=parent.parentElement){result.push(parent);if(parent===root)break;}
+    return result;
+  }
+  function build(data, choices) {
+    const svg = data.root.cloneNode(true);
+    svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', XLINK);
+    const ids = new Set([svg.id,...[...svg.querySelectorAll('[id]')].map(el=>el.id)]);
+    const unique = base => {let id=base,i=1;while(ids.has(id))id=`${base}_${i++}_`;ids.add(id);return id;};
+    for (const item of data.shapes) {
+      if (!choices.has(item.index)) continue;
+      if (item.reason) throw new Error(item.reason);
+      const shape = svg.querySelector(`[data-mask-shape="${item.index}"]`);
+      const wrapper=svgNode('g'), clip=svgNode('clipPath',{id:unique('clippath'),clipPathUnits:'userSpaceOnUse'});
+      const group=svgNode('g',{id:unique('clip_1'),'clip-path':`url(#${clip.id})`});
+      const image=svgNode('image',{overflow:'visible',...Object.fromEntries(Object.entries(item.box).map(([k,v])=>[k,number(v)]))});
+      image.setAttributeNS(XLINK,'xlink:href','');
+      shape.replaceWith(wrapper);
+      // Preserve shape opacity on the image wrapper, but strip its original paint.
+      for(const prop of ['opacity','display','visibility']) {
+        if(shape.hasAttribute(prop)){wrapper.setAttribute(prop,shape.getAttribute(prop));shape.removeAttribute(prop);}
+        if(shape.style.getPropertyValue(prop)){wrapper.style.setProperty(prop,shape.style.getPropertyValue(prop));shape.style.removeProperty(prop);}
+      }
+      for(const prop of ['fill','fill-opacity','stroke','stroke-width','stroke-opacity','paint-order','marker-start','marker-mid','marker-end']) {
+        shape.removeAttribute(prop);shape.style.removeProperty(prop);
+      }
+      shape.setAttribute('clip-rule',item.clipRule);shape.style.setProperty('clip-rule',item.clipRule);
+      clip.append(shape);group.append(image);wrapper.append(clip,group);
+    }
+    svg.querySelectorAll('[data-mask-shape]').forEach(el=>el.removeAttribute('data-mask-shape'));
+    return '<?xml version="1.0" encoding="UTF-8"?>\n'+serialise(svg);
+  }
+  function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
+  function save(text,name){
+    const url=URL.createObjectURL(new Blob([text],{type:'image/svg+xml'}));
+    const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function refresh() {
+    const indexes=model.shapes.filter(item=>selected.has(item.index)).map(item=>item.index);
+    for(const item of model.shapes) {
+      const active=selected.has(item.index), button=$('shape-list').children[item.index];
+      button.setAttribute('aria-pressed',String(active));
+      button.querySelector('.badge').textContent=active?`Mask ${indexes.indexOf(item.index)+1}`:'';
+      const shape=$('preview').contentDocument.querySelector(`[data-mask-shape="${item.index}"]`);
+      const original=model.root.querySelector(`[data-mask-shape="${item.index}"]`);
+      shape.setAttribute('style',original.getAttribute('style') || '');
+      shape.style.cursor=item.reason?'not-allowed':'pointer';
+      if(active){shape.style.setProperty('fill','#3184fc','important');shape.style.setProperty('fill-opacity','.6','important');shape.style.setProperty('stroke','#083f81','important');shape.style.setProperty('stroke-width','2px','important');shape.style.setProperty('vector-effect','non-scaling-stroke','important');}
+    }
+    $('selection-count').textContent=`${selected.size} ${selected.size===1?'mask':'masks'} selected`;
+    $('download').disabled=$('copy').disabled=selected.size===0;
+    $('output').value=selected.size?build(model,selected):'';
+  }
+  function toggle(index){const item=model.shapes[index];if(item.reason){status(item.reason,true);return;}if(selected.has(index))selected.delete(index);else selected.add(index);refresh();}
+  async function showEditor(data, name, token) {
+    await loadFrame($('preview'));if(token!==generation)return;
+    model=data;filename=name.replace(/\.svg$/i,'');selected.clear();
+    const live=$('preview').contentDocument.importNode(model.root,true);
+    // The preview fits the artboard; these presentation changes never enter output.
+    live.style.width='100%';live.style.height='100%';
+    $('preview').contentDocument.body.append(live);
+    $('shape-list').replaceChildren();
+    for(const item of model.shapes){
+      const button=document.createElement('button');button.type='button';button.className='shape-row';button.disabled=!!item.reason;
+      button.title=item.reason || item.label;
+      const label=document.createElement('span');label.className='label';label.textContent=item.label+(item.reason?' (unavailable)':'');
+      const badge=document.createElement('span');badge.className='badge';button.append(label,badge);
+      button.addEventListener('click',()=>toggle(item.index));$('shape-list').append(button);
+    }
+    live.addEventListener('click',event=>{const shape=event.target.closest('[data-mask-shape]');if(shape)toggle(Number(shape.getAttribute('data-mask-shape')));});
+    $('editor').hidden=false;refresh();status(`${name} · Choose shapes in the preview or list.`);
+  }
+  function setMode(value){
+    advanced=value;++generation;model=null;selected.clear();
+    $('advanced').hidden=!advanced;$('editor').hidden=true;$('output').value='';
+    $('mode-switcher').textContent=advanced?'Simple Mode':'Advanced Mode';
+    $('mode-switcher').setAttribute('aria-pressed',String(advanced));
+    $('file-input').multiple=!advanced;
+    $('instructions').textContent=advanced?'Upload one SVG, then select each shape that should become an image mask. Unselected artwork stays in place.':'Upload a single-shape SVG to download its mask automatically. Use Advanced Mode to choose masks and keep other artwork.';
+    status('');
+  }
+  async function upload(files){
+    if(!files.length)return;
+    if(advanced && files.length!==1){status('Upload one SVG at a time in Advanced Mode.',true);return;}
+    const token=++generation, mode=advanced;model=null;$('editor').hidden=true;selected.clear();$('output').value='';
+    const messages=[];let failed=false;
+    for(const file of files){
+      if(token!==generation)return;
+      try{
+        if(!/\.svg$/i.test(file.name))throw new Error('Only SVG files are supported.');
+        if(file.size>5*1024*1024)throw new Error('Please use an SVG smaller than 5 MB.');
+        status(`Reading ${file.name}…`);
+        const text=await file.text();if(token!==generation)return;
+        const data=await inspect(text);if(token!==generation)return;
+        if(mode){await showEditor(data,file.name,token);return;}
+        if(data.shapes.length!==1 || data.hasOtherArtwork)throw new Error('Use Advanced Mode to choose which shapes become masks.');
+        save(build(data,new Set([data.shapes[0].index])),file.name.replace(/\.svg$/i,'')+'-processed.svg');
+        messages.push(`${file.name} · Downloaded`);
+      }catch(error){failed=true;messages.push(`${file.name} · ${error.message}`);}
+    }
+    if(token===generation)status(messages.join('\n'),failed);
+  }
+  $('mode-switcher').addEventListener('click',()=>setMode(!advanced));
+  $('drop-area').addEventListener('click',()=>$('file-input').click());
+  $('file-input').addEventListener('change',event=>{upload([...event.target.files]);event.target.value='';});
+  for(const event of ['dragenter','dragover','dragleave','drop'])document.addEventListener(event,e=>e.preventDefault());
+  for(const event of ['dragenter','dragover'])$('drop-area').addEventListener(event,()=>$('drop-area').classList.add('highlight'));
+  for(const event of ['dragleave','drop'])$('drop-area').addEventListener(event,()=>$('drop-area').classList.remove('highlight'));
+  $('drop-area').addEventListener('drop',event=>upload([...event.dataTransfer.files]));
+  $('clear').addEventListener('click',()=>{selected.clear();refresh();});
+  $('download').addEventListener('click',()=>{if(model && selected.size)save(build(model,selected),`${filename}-processed.svg`);});
+  $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output').value);status('SVG code copied.');}catch{$('output').closest('details').open=true;$('output').select();status('Select and copy the output code below.');}});
+  window.ShapeMask={inspect,build};
+})();

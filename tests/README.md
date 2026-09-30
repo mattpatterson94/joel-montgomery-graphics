@@ -50,3 +50,19 @@ Path translations use the vendored svgpath 2.6.0 browser bundle (MIT); see
 Detected repeat tile widths now default to the measured centre width minus exactly
 1 SVG unit. End cutoffs, centre artwork and height remain unchanged. Manual tile
 width edits are used as entered; the subtraction is not applied a second time.
+
+
+## Shape Mask selection
+
+Start a local HTTP server on port 8765, then run `node tests/shape-mask.test.cjs`
+with Playwright available through `NODE_PATH`. Set `CHROMIUM_PATH` if needed.
+
+The five supplied SVGs under `fixtures/shape-mask/` are known-working output
+references. Tests reconstruct plain artwork from their clipping shapes and
+verify the new converter's independent image wrappers, geometry and preservation
+of solid artwork. Additional checks cover compound-path holes, transformed
+shapes, preview/list/keyboard selection, automatic single-shape downloads,
+mobile layout and rejected input. The old monitor reference has swapped image
+dimensions; the test intentionally expects the actual clipping bounds instead.
+
+These checks do not replace importing generated files into the design app.

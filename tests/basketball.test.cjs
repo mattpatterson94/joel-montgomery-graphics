@@ -10,6 +10,12 @@ const {chromium}=require('playwright');
  function flight(ball,fps=120){const hits=[];for(let i=0;i<fps*5;i++){const hit=stepBall(ball,1/fps);if(hit!==-1)hits.push(hit);}return{ball,hits};}
  function gesture(lane,origin,dx=0,dy=240,duration=350,steps=14){return{lane,origin,start:{x:origin,y:RACK_Y},end:{x:origin+dx,y:RACK_Y-dy},samples:Array.from({length:steps+1},(_,i)=>({x:origin+dx*i/steps,y:RACK_Y-dy*i/steps,t:duration*i/steps}))};}
  assert.equal(pointsAt(30),1);assert.equal(pointsAt(20.001),1);assert.equal(pointsAt(20),2);assert.equal(pointsAt(10),3);assert.equal(pointsAt(0),0);assert.equal(remaining(30000,31000),0);
+ // Each scored ball triggers one sensor hit and one quiet ramp return.
+ {const ball=makeBall(0,aimFor(0,HOOPS[0]),280,1),events=[];
+  for(let i=0;i<600;i++){stepBall(ball,1/120);events.push(...ball.events.map(event=>event.type));}
+  assert.equal(events.filter(type=>type==='sensor').length,1);
+  assert.equal(events.filter(type=>type==='return').length,1);
+ }
  for(const lane of [0,1])for(const fps of [30,60,144])assert.deepEqual(flight(makeBall(lane,aimFor(lane,HOOPS[lane]),280,1),fps).hits,[lane]);
  for(const lane of [0,1]){
   for(const duration of [220,350,600]){
@@ -92,15 +98,16 @@ const {chromium}=require('playwright');
  await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await mobile.clock.runFor(2300);assert.equal(Number(await mobile.locator('#p2').textContent()),1);
  // Render sound events offline: distinct envelopes, non-silent, no clipping.
  const soundCheck=await page.evaluate(async()=>{
-  const{CourtAudio}=await import('./sound.mjs?v=5'),summary={};
-  for(const type of ['swish','net','rim','board','bounce']){
-   const context=new OfflineAudioContext(2,44100*.6,44100),sound=new CourtAudio(context);sound.enabled=true;sound.play(type,.8,.4);
+  const{CourtAudio}=await import('./sound.mjs?v=6'),summary={};
+  for(const type of ['swish','net','rim','board','bounce','sensor','return']){
+   const context=new OfflineAudioContext(2,44100*.6,44100),sound=new CourtAudio(context);sound.enabled=true;await sound.loadSamples();if(['rim','sensor','return','bounce'].includes(type)&&!sound.samples[type]?.length)throw new Error('Missing recording: '+type);sound.play(type,.8,.4);
    const buffer=await context.startRendering(),data=buffer.getChannelData(0);let energy=0,peak=0;for(const value of data){energy+=value*value;peak=Math.max(peak,Math.abs(value));}
    summary[type]={energy,peak};
   }return summary;
  });
  for(const [type,result]of Object.entries(soundCheck)){assert.ok(result.energy>.001,type+' audible');assert.ok(result.peak<1,type+' unclipped');}
  assert.deepEqual(errors,[]);
+ assert.ok(soundCheck.return.energy<soundCheck.sensor.energy*.1,'fabric return stays quiet');
  console.log('Natural mouse/touch throws, shifted rack, physics/preview, nets, spin, audio, scores and keyboard fallback passed.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

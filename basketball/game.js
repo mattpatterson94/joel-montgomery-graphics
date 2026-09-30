@@ -1,8 +1,8 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=5';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=5';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=5';
-import {drawNet} from './net.mjs?v=5';
-import {CourtAudio} from './sound.mjs?v=5';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=6';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=6';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=6';
+import {drawNet} from './net.mjs?v=6';
+import {CourtAudio} from './sound.mjs?v=6';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 const timer = document.querySelector('#timer'), scoreEls = [document.querySelector('#p1'),document.querySelector('#p2')];
 const phase = document.querySelector('#phase'), multiplier = document.querySelector('#multiplier');

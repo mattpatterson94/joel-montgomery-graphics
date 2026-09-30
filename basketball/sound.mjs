@@ -1,10 +1,26 @@
-// Procedural material sounds, not musical score beeps. Noise supplies the attack
-// and net friction; short inharmonic resonances supply rubber, metal and board body.
+// Recorded office-machine contacts, with procedural net/board sounds and loading fallback.
+const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact']};
+const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
 export class CourtAudio {
- constructor(context=null){this.context=context;this.enabled=false;this.last=new Map();this.voices=0;}
+ constructor(context=null){this.context=context;this.enabled=false;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
  unlock(){
   if(!this.enabled)return;
-  try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended'&&typeof this.context.startRendering!=='function')this.context.resume().catch(()=>{});}catch{}
+  try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended'&&typeof this.context.startRendering!=='function')this.context.resume().catch(()=>{});this.loadSamples();}catch{}
+ }
+ async loadSamples(){
+  if(!this.context)return;
+  if(this.loading)return this.loading;
+  this.loading=Promise.all(Object.entries(RECORDINGS).map(async([type,names])=>{
+   const buffers=await Promise.all(names.map(async name=>{
+    try{
+     const response=await fetch(new URL(`./audio/${name}.wav`,import.meta.url));
+     if(!response.ok)throw new Error('Audio unavailable');
+     return await this.context.decodeAudioData(await response.arrayBuffer());
+    }catch{return null;}
+   }));
+   this.samples[type]=buffers.filter(Boolean);
+  }));
+  return this.loading;
  }
  setup(){
   const ctx=this.context;
@@ -54,7 +70,18 @@ export class CourtAudio {
     }
     const source=ctx.createBufferSource();source.buffer=buffer;source.connect(output);source.start(now);nodes.push(source);sources.push(source);
   };
-  if(type==='rim'){
+  const clips=this.samples[type];
+  if(clips?.length){
+    const index=this.variants[type]??0;this.variants[type]=index+1;
+    const source=ctx.createBufferSource();source.buffer=clips[index%clips.length];
+    source.playbackRate.value=1+(Math.random()-.5)*(type==='sensor'?.02:.05);
+    output.gain.value=.28*LEVELS[type]*Math.max(.1,Math.min(1,strength));
+    source.connect(output);source.start(now);nodes.push(source);sources.push(source);
+  }else if(type==='sensor'){
+    noise(0,.08,480,.8,'lowpass');mode(310,.15,.3,.88);mode(890,.12,.2);
+  }else if(type==='return'){
+    noise(0,.32,780,.1,'bandpass',.025);
+  }else if(type==='rim'){
     noise(0,.026,2600,.6,'highpass');mode(690,.12,.48);mode(1171,.085,.23);mode(2049,.06,.12);
   }else if(type==='board'){
     noise(0,.018,1700,.8,'highpass');noise(0,.09,520,1.1,'lowpass');mode(138,.085,.5,.82);mode(291,.045,.14);noise(.022,.09,950,.24,'bandpass');

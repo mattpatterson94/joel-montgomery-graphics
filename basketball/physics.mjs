@@ -89,9 +89,10 @@ export function stepBall(ball, dt) {
         }
       }
     }
-    if(ball.scored&&!ball.netExited&&ball.h<RIM_HEIGHT-115){ball.netExited=true;ball.events.push({type:'net',strength:.4});}
+    if(ball.scored&&!ball.netExited&&ball.h<RIM_HEIGHT-115){ball.netExited=true;ball.events.push({type:'sensor',strength:.85});}
     if(ball.h<BALL_RADIUS && ball.vh<0) {
-      if(-ball.vh>90)ball.events.push({type:'bounce',strength:clamp(-ball.vh/650,.1,1)});
+      if(!ball.landed)ball.events.push({type:'return',strength:.7});
+      else if(-ball.vh>90)ball.events.push({type:'bounce',strength:clamp(-ball.vh/650,.1,.7)});
       ball.h=BALL_RADIUS; ball.vh*=-.42; ball.vx*=.65; ball.vz=-.45*SHOT_RATE;
       ball.bounces++; ball.landed=true;ball.omega=[ball.vz*700/BALL_RADIUS,ball.omega[1]*.5,-ball.vx/BALL_RADIUS];
       if(ball.vh<70 || ball.bounces>=4) {ball.vh=0;ball.grounded=true;}

@@ -57,6 +57,12 @@ const {chromium}=require('playwright');
  const bank=flight(makeBall(0,aimFor(0,216),350,1));assert.ok(bank.ball.bankHits>0);
  const rim=flight(makeBall(0,aimFor(0,216)+35,280,1));assert.ok(rim.ball.rimHits>0);assert.ok(rim.ball.grounded);
  const reaction={time:0,ball:{h:100,entry:{swish:true,x:0}}};assert.equal(netShape(reaction,180,0).stretch,0,'net anchors stay fixed');assert.ok(netShape(reaction,180,1).stretch>5);assert.equal(netShape(reaction,2000,1).stretch,0,'net settles');
+ // Escaped balls drop below the ramp and rebound from the carpet on both sides.
+ for(const lane of [0,1])for(const fps of [30,144]){
+  const ball=makeBall(lane,lane?250:-250,300,1);let floorHits=0,belowRamp=false;
+  for(let i=0;i<fps*5;i++){assert.equal(stepBall(ball,1/fps),-1);floorHits+=ball.events.filter(e=>e.type==='floor').length;belowRamp||=ball.h<0;}
+  assert.equal(ball.escaped,true);assert.ok(belowRamp);assert.ok(floorHits>=2);assert.ok(ball.floorBounces>=2);
+ }
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox']});
  try{
  const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];
@@ -70,7 +76,7 @@ const {chromium}=require('playwright');
  // A ball wholly inside the display bounds must alter its composited pixels.
  // This catches the original HTML-overlay bug, not just a z-index declaration.
  const displayBefore=await page.locator('.scoreboard').screenshot();
- await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=10');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
+ await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=11');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
  const displayAfter=await page.locator('.scoreboard').screenshot();
  assert.equal(displayBefore.equals(displayAfter),false,'ball paints in front of scoreboard');
  await page.screenshot({path:'/tmp/hoops-scoreboard-layer.png',fullPage:true});
@@ -107,6 +113,19 @@ const {chromium}=require('playwright');
  await start();await page.keyboard.press('w');await page.clock.runFor(2200);assert.equal(await score('#p1'),0);
  const box=await page.locator('#court').boundingBox();await page.mouse.move(box.x+584*box.width/800,box.y+RACK_Y*box.height/COURT_HEIGHT);await page.mouse.down();await page.clock.runFor(450);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up();assert.match(await page.locator('#accuracy1').textContent(),/^0\/0/);
  assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');await page.locator('#sound').click();assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'false');await page.locator('#sound').click();
+ // A wide mouse throw remains visible beyond the court and has no click outline.
+ await start();
+ {const r=await page.locator('#court').boundingBox(),at=(x,y)=>({x:r.x+x*r.width/800,y:r.y+y*r.height/COURT_HEIGHT});
+ const a=at(216,RACK_Y);await page.mouse.move(a.x,a.y);await page.mouse.down();
+ for(let i=1;i<=14;i++){await page.clock.runFor(25);const p=at(216-240*i/14,RACK_Y-240*i/14);await page.mouse.move(p.x,p.y);}
+ await page.mouse.up();await page.clock.runFor(1250);
+ assert.equal(await page.locator('#court').evaluate(el=>getComputedStyle(el).outlineStyle),'none');
+ const visibleOutside=await page.evaluate(()=>{
+  const court=document.querySelector('#court').getBoundingClientRect(),c=document.querySelector('#loose-balls'),ctx=c.getContext('2d'),ratio=c.width/innerWidth;
+  const data=ctx.getImageData(0,0,Math.max(1,Math.floor(court.left*ratio)),c.height).data;
+  let pixels=0;for(let i=3;i<data.length;i+=4)if(data[i]>40)pixels++;return pixels;
+ });assert.ok(visibleOutside>20,'escaped ball visible beyond the machine');
+ await page.screenshot({path:'/tmp/hoops-escape.png',fullPage:true});}
  await page.reload();assert.equal(await score('#best0'),5);await page.clock.runFor(32);await page.screenshot({path:'/tmp/hoops-desktop.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.setViewportSize({width:390,height:844});await page.clock.runFor(32);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/hoops-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
@@ -121,7 +140,7 @@ const {chromium}=require('playwright');
  await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await mobile.clock.runFor(2300);assert.equal(Number(await mobile.locator('#p2').textContent()),1);
  // Render sound events offline: distinct envelopes, non-silent, no clipping.
  const soundCheck=await page.evaluate(async()=>{
-  const{CourtAudio}=await import('./sound.mjs?v=10'),summary={};
+  const{CourtAudio}=await import('./sound.mjs?v=11'),summary={};
   for(const type of ['swish','net','rim','board','bounce','sensor','return']){
    const context=new OfflineAudioContext(2,44100*.6,44100),sound=new CourtAudio(context);sound.enabled=true;await sound.loadSamples();if(['rim','sensor','return','bounce'].includes(type)&&!sound.samples[type]?.length)throw new Error('Missing recording: '+type);sound.play(type,.8,.4);
    const buffer=await context.startRendering(),data=buffer.getChannelData(0);let energy=0,peak=0;for(const value of data){energy+=value*value;peak=Math.max(peak,Math.abs(value));}

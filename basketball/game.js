@@ -1,11 +1,11 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=10';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=10';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=10';
-import {drawSensorArm} from './sensor.mjs?v=10';
-import {drawFabricReturn} from './fabric.mjs?v=10';
-import {drawSideNet} from './side-net.mjs?v=10';
-import {drawNet} from './net.mjs?v=10';
-import {CourtAudio} from './sound.mjs?v=10';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y, carpetHeight} from './physics.mjs?v=11';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=11';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=11';
+import {drawSensorArm} from './sensor.mjs?v=11';
+import {drawFabricReturn} from './fabric.mjs?v=11';
+import {drawSideNet} from './side-net.mjs?v=11';
+import {drawNet} from './net.mjs?v=11';
+import {CourtAudio} from './sound.mjs?v=11';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -25,6 +25,14 @@ function alignOffice(){
 }
 new ResizeObserver(alignOffice).observe(canvas);
 window.addEventListener('resize',alignOffice);alignOffice();
+// A transparent viewport canvas carries balls beyond the machine's bounds.
+// Input stays on the original court; this layer never intercepts pointer events.
+const looseCanvas=document.createElement('canvas');looseCanvas.id='loose-balls';looseCanvas.setAttribute('aria-hidden','true');document.body.append(looseCanvas);
+const loose=looseCanvas.getContext('2d'),looseDpr=Math.min(devicePixelRatio||1,1.5);
+let sceneRect=canvas.getBoundingClientRect();
+function resizeLoose(){looseCanvas.width=Math.ceil(innerWidth*looseDpr);looseCanvas.height=Math.ceil(innerHeight*looseDpr);sceneRect=canvas.getBoundingClientRect();}
+window.addEventListener('resize',resizeLoose);window.addEventListener('scroll',()=>{sceneRect=canvas.getBoundingClientRect();},{passive:true});
+new ResizeObserver(()=>{sceneRect=canvas.getBoundingClientRect();}).observe(canvas);resizeLoose();
 const timer = document.querySelector('#timer'), scoreEls = [document.querySelector('#p1'),document.querySelector('#p2')];
 const phase = document.querySelector('#phase'), multiplier = document.querySelector('#multiplier');
 const start = document.querySelector('#start'), message = document.querySelector('#message');
@@ -115,7 +123,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=coords(e),lane=p.x<400?0:1,origin=rackX(lane,rackShots[lane]);
  if(Math.hypot(p.x-origin,p.y-RACK_Y)>72||laneBusy(lane)||performance.now()-cooldown[lane]<550)return;
- e.preventDefault();audio.unlock();canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
+ e.preventDefault();audio.unlock();canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
  const now=performance.now();drags.set(e.pointerId,{start:p,end:p,lane,origin,samples:[{...p,t:now}]});
 });
 function recordPointer(d,e){
@@ -139,7 +147,7 @@ for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener
 const controlKeys=['a','d','w','arrowleft','arrowright','arrowup'];
 window.addEventListener('keydown',e=>{
  const key=e.key.toLowerCase();if(!controlKeys.includes(key)||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
- e.preventDefault();if(e.repeat||keys.has(key))return;
+ e.preventDefault();canvas.classList.remove('pointer-focus');if(e.repeat||keys.has(key))return;
  if(['w','arrowup'].includes(key)){const lane=key==='w'?0:1;if(laneBusy(lane)||performance.now()-cooldown[lane]<550)return;}
  audio.unlock();keys.set(key,performance.now());
 });
@@ -148,6 +156,7 @@ window.addEventListener('keyup',e=>{
  if(key==='w'||key==='arrowup'){const lane=key==='w'?0:1;shoot(makeBall(lane,aim[lane],chargePower(performance.now()-pressed),-1,rackX(lane,rackShots[lane])));}
  keys.delete(key);
 });
+window.addEventListener('keydown',e=>{if(e.key==='Tab')canvas.classList.remove('pointer-focus');});
 window.addEventListener('blur',()=>{keys.clear();drags.clear();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();drags.clear();balls=[];}sync(performance.now());});
 function drawPreview(sample){
@@ -179,7 +188,7 @@ function controls(now,dt){
   }
  }
 }
-function drawBall(item){const p=project(item.x,item.h,item.z);drawSphere(ctx,p.x,p.y,p.radius,item.spin,item);}
+function drawBall(item){if(item.escaped)return;const p=project(item.x,item.h,item.z);drawSphere(ctx,p.x,p.y,p.radius,item.spin,item);}
 function frame(now){
  const dt=Math.min((now-last)/1000,.25);last=now;sync(now);
  accumulator+=dt;
@@ -208,9 +217,9 @@ function frame(now){
   }
  }
  }
- balls=balls.filter(item=>item.age<5&&!(item.grounded&&item.z===0)&&item.x>-400&&item.x<1200);
+ balls=balls.filter(item=>item.escaped?item.age<9:item.age<5&&!(item.grounded&&item.z===0));
  ctx.clearRect(0,0,800,COURT_HEIGHT);
- for(const item of balls){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
+ for(const item of balls.filter(item=>!item.escaped)){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
  const ordered=[...balls].sort((a,b)=>b.z-a.z);
  // Balls in front of the hoop must cover its rim/net on the way up. Balls
  // arriving at hoop depth sit between its back and front halves on the way down.
@@ -222,6 +231,24 @@ function frame(now){
  ordered.filter(item=>item.z<.92).forEach(drawBall);
  flashes=flashes.filter(f=>now-f.time<800);for(const f of flashes){ctx.save();ctx.globalAlpha=1-(now-f.time)/800;ctx.font='700 19px Arial';ctx.textAlign='center';ctx.fillStyle=f.good?'#fff':'#bc9eac';ctx.fillText(f.label,HOOPS[f.lane],RIM_Y-32-(reducedMotion?0:(now-f.time)/42));ctx.restore();}
  controls(now,dt);
+ loose.setTransform(1,0,0,1,0,0);loose.clearRect(0,0,looseCanvas.width,looseCanvas.height);
+ const unit=sceneRect.width/800;
+ loose.setTransform(looseDpr*unit,0,0,looseDpr*unit,sceneRect.left*looseDpr,sceneRect.top*looseDpr);
+ for(const item of ordered){
+  const p=project(item.x,item.h,item.z);
+  if(!item.escaped&&p.x-p.radius>=0&&p.x+p.radius<=800&&p.y-p.radius>=0&&p.y+p.radius<=COURT_HEIGHT)continue;
+  if(sceneRect.left+(p.x+p.radius)*unit<0||sceneRect.left+(p.x-p.radius)*unit>innerWidth||sceneRect.top+(p.y-p.radius)*unit>innerHeight)continue;
+  loose.save();
+  if(!item.escaped){
+   // Continue the edge of an airborne ball outside the court without overdrawing
+   // the scoreboard/net composition already rendered inside it.
+   loose.beginPath();loose.rect(-10000,-10000,20000,20000);loose.rect(0,0,800,COURT_HEIGHT);loose.clip('evenodd');
+  }else{
+   const floor=carpetHeight(item.z,item.x),shadow=project(item.x,floor,item.z),height=Math.max(0,item.h-floor);
+   loose.globalAlpha=.28/(1+height/400);ellipse(loose,shadow.x,shadow.y,shadow.radius*(1+height/1200),shadow.radius*.18,'#000');loose.globalAlpha=1;
+  }
+  drawSphere(loose,p.x,p.y,p.radius,item.spin,item);loose.restore();
+ }
  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

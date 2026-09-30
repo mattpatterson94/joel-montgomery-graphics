@@ -20,5 +20,13 @@
       <a href="stretchable/"><span>Stretchable Shape Creator</span><span aria-hidden="true">→</span></a>
     </nav>
   </main>
+  <script>
+    window.setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = '../basketball/';
+      link.innerHTML = '<span>🏀 Secret Basketball Game</span><span aria-hidden="true">→</span>';
+      document.querySelector('nav[aria-label="Design utilities"]').append(link);
+    }, 10000);
+  </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact']};
 const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
 export class CourtAudio {
- constructor(context=null){this.context=context;this.enabled=false;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
+ constructor(context=null){this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
  unlock(){
   if(!this.enabled)return;
   try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended'&&typeof this.context.startRendering!=='function')this.context.resume().catch(()=>{});this.loadSamples();}catch{}
@@ -85,7 +85,7 @@ export class CourtAudio {
     noise(0,.026,2600,.6,'highpass');mode(690,.12,.48);mode(1171,.085,.23);mode(2049,.06,.12);
   }else if(type==='board'){
     noise(0,.018,1700,.8,'highpass');noise(0,.09,520,1.1,'lowpass');mode(138,.085,.5,.82);mode(291,.045,.14);noise(.022,.09,950,.24,'bandpass');
-  }else if(type==='bounce'){
+  }else if(type==='bounce'||type==='floor'){
     rubberImpact();
   }else if(type==='swish'||type==='net'){
     const clean=type==='swish';noise(0,clean?.27:.16,clean?1550:1100,clean?.8:.55,'bandpass',.025);

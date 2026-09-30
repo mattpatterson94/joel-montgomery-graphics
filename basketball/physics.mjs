@@ -25,6 +25,12 @@ export function project(x, h, z) {
   const scale = 1 / (1 + Math.max(0, z) * 2 / 3);
   return {x:400+(x-400)*scale, y:920-410*z-h*scale, radius:BALL_RADIUS*scale, scale};
 }
+// Carpet sits below the return ramp, sloping away in the room perspective.
+export function carpetHeight(z,x=400){
+ const scale=1/(1+Math.max(0,z)*2/3);
+ const sideSlope=.36*Math.max(0,22-project(x,0,z).x);
+ return (920-410*z-(1220-160*clamp(z,0,1)+sideSlope))/scale;
+}
 export const hoopWorldX = lane => 400+(HOOPS[lane]-400)/.6;
 export function makeBall(lane, aim, power, round, origin=HOOPS[lane]) {
   // No automatic aiming: straight ahead is a real miss from the starting rack.
@@ -47,6 +53,32 @@ export function stepBall(ball, dt) {
     for(let axis=0;axis<3;axis++)ball.spin[axis]+=ball.omega[axis]*step;
     if(ball.scored&&ball.h>RIM_HEIGHT-120&&ball.vh<0)ball.vh*=Math.exp(-2.2*step);
     if(!ball.grounded) {ball.h+=ball.vh*step-GRAVITY*step*step/2; ball.vh-=GRAVITY*step;}
+    const screen=project(ball.x,ball.h,ball.z);
+    if(!ball.escaped&&(screen.x<22||screen.x>778)){
+      ball.escaped=true;ball.grounded=false;ball.floorBounces=0;
+    }
+    if(ball.escaped){
+      // The room's back wall continues beyond the printed backboard. Keeping
+      // this depth bounded also lets loose balls return towards the foreground.
+      const roomWall=1.16-BALL_RADIUS/700;
+      if(ball.z>roomWall&&ball.vz>0){
+        ball.z=roomWall;ball.vz*=-.58;
+        ball.events.push({type:'board',strength:.45});
+      }
+      const floor=carpetHeight(ball.z,ball.x)+BALL_RADIUS;
+      if(ball.h<floor&&ball.vh<0){
+        ball.h=floor;ball.floorBounces++;ball.landed=true;
+        if(-ball.vh>100)ball.events.push({type:'floor',strength:clamp(-ball.vh/1600,.15,.8)});
+        ball.vh*=-.5;ball.vx*=.83;ball.vz*=.75;
+        if(ball.vh<90||ball.floorBounces>=4){ball.vh=0;ball.grounded=true;}
+      }
+      if(ball.grounded){
+        ball.h=carpetHeight(ball.z,ball.x)+BALL_RADIUS;
+        ball.vx*=Math.exp(-.38*step);ball.vz*=Math.exp(-.7*step);
+      }
+      ball.omega[0]=ball.vz*700/BALL_RADIUS;ball.omega[2]=-ball.vx/BALL_RADIUS;
+      continue;
+    }
     // Sphere against the board, accounting for the ball's radius and board width.
     const boardLimit=1.16-BALL_RADIUS/700;
     const onBoard=project(ball.x,ball.h,1.16);

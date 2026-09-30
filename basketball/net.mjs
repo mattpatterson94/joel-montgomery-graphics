@@ -1,21 +1,25 @@
-import {RIM_Y,RIM_HEIGHT,clamp} from './physics.mjs?v=9';
+import {RIM_Y,RIM_HEIGHT,clamp} from './physics.mjs?v=11';
 export function netShape(reaction,now,t){
  if(!reaction)return {shift:0,stretch:0,bulge:0,rim:0};
- const elapsed=(now-reaction.time)/1000,decay=Math.exp(-elapsed*4);
- if(elapsed>1.6)return {shift:0,stretch:0,bulge:0,rim:0};
- if(reaction.rim){return {shift:Math.sin(elapsed*24)*2.5*decay*t,stretch:Math.sin(elapsed*19)*1.5*decay*t,bulge:0,rim:Math.sin(elapsed*33)*.8*decay};}
- const progress=clamp((RIM_HEIGHT-reaction.ball.h)/120,0,1.4);
- const wave=Math.sin(Math.min(elapsed/.42,1)*Math.PI),swish=reaction.ball.entry.swish;
- const offset=clamp(reaction.ball.entry.x*.13,-5,5);
- return {shift:(offset*wave+Math.sin(elapsed*16)*decay*(swish?1:3))*t*t,
-   stretch:wave*(swish?11:7)*t*t,
-   bulge:Math.exp(-Math.pow((t-progress)/.28,2))*Math.sin(Math.min(progress,1)*Math.PI)*6*t,
+ const elapsed=Math.max(0,(now-reaction.time)/1000),decay=Math.exp(-elapsed*3.4);
+ if(elapsed>=2)return {shift:0,stretch:0,bulge:0,rim:0};
+ if(reaction.rim){return {shift:Math.sin(elapsed*22)*4.8*decay*t*t,stretch:Math.sin(elapsed*18)*3.2*decay*t,bulge:Math.sin(elapsed*17)*1.6*decay*t,rim:Math.sin(elapsed*33)*.8*decay};}
+ const progress=clamp((RIM_HEIGHT-reaction.ball.h)/125,0,1.5);
+ const speed=clamp((reaction.ball.entry.speed??1100)/1100,.7,1.25),swish=reaction.ball.entry.swish;
+ // Ball-driven expansion travels down the mesh, then the bottom collar snaps
+ // back and swings. Anchors stay fixed and the rim does not stretch.
+ const pull=Math.sin(Math.min(elapsed/.34,1)*Math.PI);
+ const after=Math.max(0,elapsed-.24),recoil=Math.sin(after*19)*Math.exp(-after*5);
+ const offset=clamp(reaction.ball.entry.x*.24,-10,10);
+ return {shift:(offset*pull+Math.sin(elapsed*13)*decay*(swish?2.5:6))*t*t,
+   stretch:(pull*21*speed-recoil*7)*t*t,
+   bulge:(Math.exp(-Math.pow((t-progress)/.25,2))*Math.sin(Math.min(progress,1)*Math.PI)*13*speed-recoil*3*t)*t,
    rim:0};
 }
 export function drawNet(ctx,x,now,front,reaction){
- const rows=4,segments=8;
+ const rows=5,segments=9;
  function point(t,angle){const shape=netShape(reaction,now,t);const radius=64-25*t+shape.bulge;return [x+radius*Math.cos(angle)+shape.shift,RIM_Y+78*t+(16-7*t)*Math.sin(angle)+shape.stretch+shape.rim];}
- ctx.save();ctx.lineWidth=front?1.35:1.1;ctx.strokeStyle=front?'#e5e3df':'#797e88';
+ ctx.save();ctx.lineWidth=front?1.65:1.2;ctx.strokeStyle=front?'#e5e3df':'#797e88';
  // Diamond mesh. Top nodes stay on the rim while a travelling bulge and lower
  // collar stretch follow the ball, followed by a small damped return motion.
  for(let row=0;row<rows;row++)for(let i=0;i<=segments;i++){
@@ -23,7 +27,7 @@ export function drawNet(ctx,x,now,front,reaction){
    const from=point(row/rows,angle);
    for(const direction of [-1,1]){
      const to=point((row+1)/rows,angle+direction*Math.PI/segments*.5);
-     ctx.beginPath();ctx.moveTo(...from);ctx.lineTo(...to);ctx.stroke();
+     ctx.beginPath();ctx.moveTo(...from);ctx.quadraticCurveTo((from[0]+to[0])/2,(from[1]+to[1])/2+1.1,...to);ctx.stroke();
    }
  }
  const lower=netShape(reaction,now,1);

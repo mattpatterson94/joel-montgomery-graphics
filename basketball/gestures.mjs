@@ -1,4 +1,4 @@
-import {clamp, makeBall, GRAVITY, SHOT_RATE} from './physics.mjs?v=9';
+import {clamp, makeBall, GRAVITY, SHOT_RATE} from './physics.mjs?v=11';
 
 // Pointer coordinates are expressed in the same 800-unit court space on every
 // screen. A short, time-weighted velocity window avoids device/event-rate bias.

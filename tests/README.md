@@ -66,3 +66,5 @@ mobile layout and rejected input. The old monitor reference has swapped image
 dimensions; the test intentionally expects the actual clipping bounds instead.
 
 These checks do not replace importing generated files into the design app.
+
+Thumbnail coverage: run `node tests/shape-mask-thumbnail.test.cjs` with the same server/browser setup. Checks cover the shared grid across transformed masks, non-zero viewBox origins, 240px output, transparent wide/tall padding, compound holes, solid artwork, unchanged SVG placeholders and paired downloads in both modes.

@@ -47,3 +47,5 @@ nav a { color: white; text-underline-offset: 3px; }
   .shape-list { max-height: 200px; }
   .actions button { width: 100%; }
 }
+
+#download-thumbnail { margin-top: 16px; }

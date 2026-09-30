@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Hoops of Fun</title>
-  <link rel="stylesheet" href="styles.css?v=3">
-  <script type="module" src="game.js?v=3"></script>
+  <link rel="stylesheet" href="styles.css?v=4">
+  <script type="module" src="game.js?v=4"></script>
 </head>
 <body>
   <main>
     <header><span class="eyebrow">COPIRITE / OFFICE ARCADE</span><span class="tag">2 HOOPS · 30 SECONDS</span></header>
     <div class="game-layout">
     <div class="machine">
-      <canvas id="court" width="800" height="800" tabindex="0" aria-label="Basketball court. Mouse: grab a ball, drag horizontally to aim, release when the power meter is green. Keyboard: P1 uses A and D to aim, hold and release W to shoot. P2 uses left and right arrows to aim, hold and release up arrow to shoot. Touch: swipe a ball upwards."></canvas>
+      <canvas id="court" width="800" height="800" tabindex="0" aria-label="Basketball court. Mouse or touch: grab a ball, drag up towards a hoop and release. Keyboard: P1 uses A and D to aim, hold and release W to shoot. P2 uses left and right arrows to aim, hold and release up arrow to shoot. Touch: swipe a ball upwards."></canvas>
       <div class="scoreboard" aria-label="Scoreboard">
         <div class="clock"><span>TIME</span><output id="timer">30</output></div>
         <div class="scores"><div><span>P1</span><output id="p1">00</output></div><div><span>P2</span><output id="p2">00</output></div></div>
@@ -28,10 +28,10 @@
       </div>
       <div class="instructions">
         <h2>HOW TO SHOOT</h2>
-        <p><strong>Mouse</strong> Grab a ball and drag left/right to aim. Hold to charge; release in the green zone.</p>
-        <p><strong>Keyboard</strong> P1: <kbd>A</kbd> <kbd>D</kbd> aim, hold <kbd>W</kbd> to charge. P2: <kbd>←</kbd> <kbd>→</kbd> aim, hold <kbd>↑</kbd> to charge. Release to shoot.</p>
-        <p><strong>Touch</strong> Swipe a ball towards the hoop. Longer swipes throw harder.</p>
-        <p class="note">Line up the sight with the hoop. New balls return to different spots, so adjust your aim.</p>
+        <p><strong>Mouse</strong> Grab a ball, drag up towards a hoop and release. Longer or quicker throws go further.</p>
+        <details><summary>Keyboard controls</summary><p> P1: <kbd>A</kbd> <kbd>D</kbd> aim, hold <kbd>W</kbd> to charge. P2: <kbd>←</kbd> <kbd>→</kbd> aim, hold <kbd>↑</kbd> to charge. Release to shoot.</p></details>
+        <p><strong>Touch</strong> Swipe a ball up towards a hoop and lift your finger to throw.</p>
+        <p class="note">The dotted arc previews the start of your throw. New balls return to different spots, so adjust your aim.</p>
       </div>
       <div class="panel-footer"><button id="sound" class="quiet-button" type="button" aria-pressed="false">Sound off</button><span>30 SECOND ROUNDS</span></div>
       <p class="rules">1 point per basket<br>20s left: double · 10s left: triple</p>

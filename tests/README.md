@@ -92,17 +92,29 @@ empty sections, in the target design app before relying on its importer behaviou
 Run `node tests/basketball.test.cjs` with the same HTTP server and Playwright
 setup. The unlisted page is `/basketball/`.
 
-Tests cover separate hoop scores, timer multipliers, free play, restart,
-mouse aiming and timed release, simultaneous two-player keyboard controls,
-real mobile touch, cancellation, accuracy/streaks and saved best scores.
-Quick clicks and badly aimed releases are explicitly checked to miss.
-Physics checks cover scoring at 30/60/144 fps, shifted launch positions,
-rim/backboard collisions, settling floor bounces, arc clearance and ball size.
-Browser screenshots include desktop charging and narrow layouts.
+Mouse and touch share a drag-and-release throw. Direction, drag distance and a
+small contribution from recent release velocity determine the shot. There is no
+pointer power meter or hold-to-charge timer. The ball follows the hand within the
+return area; a short, fading arc uses the same launch state and gravity. Each
+new ball returns to a different rack position. Keyboard controls remain under
+the expandable help section. Best scores use localStorage with an in-memory
+fallback; sound starts off.
 
 The supplied backboard reference is cropped at runtime without redrawing it.
-Balls share a depth projection for rendering and collision detection. Desktop
-uses A/D + W for P1 and left/right + up for P2; mouse movement adjusts aim
-while a repeating charge meter controls power. Touch retains swipe shooting.
-Each new ball returns to another rack position. Best scores use localStorage
-(with an in-memory fallback); sound is optional and starts off.
+Ball rendering uses a textured sphere with three-axis rotation, curved tricolour
+panels and surface grain. Distant/mobile balls use smaller cached sprites.
+Net cords have fixed rim anchors and deform as the ball passes; a swish stretches
+the collar downward, while rim/offset entries add restrained lateral movement.
+Reduced-motion preferences disable the extra net reaction and score-label travel.
+
+Sound effects are generated locally with Web Audio, not downloaded recordings:
+filtered noise for net friction/swish, short resonances for metal rim and hollow
+backboard contacts, and a rubber impact for floor bounces. Volume follows impact
+strength; left/right positioning follows the ball. Basket scoring has no beep.
+
+Tests cover slow/fast mouse throws, real high-DPI mobile touch, sample-rate
+independence, release continuity, shifted rack positions, misses, cancellation,
+preview/physics consistency, net settling, multi-axis spin, keyboard fallback,
+scoring/multipliers and saved statistics. Physics checks run at 30/60/144 fps.
+Offline audio renders verify each material effect is non-silent and unclipped.
+Desktop drag, net-entry and mobile screenshots support visual review.

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" href="../assets/favicon.ico">
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
   <script src="vendor/svgpath.min.js" defer></script>
   <script src="script.js?v=4" defer></script>
 </head>
@@ -54,19 +54,34 @@
         <h3 id="how-to-groups">1. Create the L, C and R groups</h3>
         <p>Set up a horizontal stretchable element in Illustrator. Name the three groups exactly <code>L</code>, <code>C</code> and <code>R</code>: left cap, repeating centre and right cap.</p>
         <p>Keep these groups at the top level, without any extra groups around them. Put all visible artwork inside them and use one artboard for the complete element.</p>
-        <div class="screenshot-placeholder"><strong>Screenshot: artwork and Layers panel</strong><span>Show the complete element on its artboard, with the Layers panel expanded to show the three top-level groups named L, C and R.</span></div>
+        <img
+          class="how-to-image"
+          src="how-to/groups.png"
+          alt="Illustrator artboard showing the L, C and R artwork with the Layers panel showing the three named groups."
+          loading="lazy"
+        >
       </section>
       <section aria-labelledby="how-to-centre">
         <h3 id="how-to-centre">2. Make C one repeatable tile</h3>
         <p>The centre should contain one complete repeat. Its left and right edges need to join when copies are placed side by side. Check this by temporarily duplicating C horizontally, then remove the extra copies before exporting.</p>
         <p>The converter uses C’s artwork bounds to detect the tile width, then subtracts 1 unit for overlap between repeats. You can change the resulting width in <strong>Adjust settings</strong>.</p>
-        <div class="screenshot-placeholder"><strong>Screenshot: checking the centre repeat</strong><span>Show one centre tile and three copies placed side by side, with the joins marked so designers can see how the edges meet.</span></div>
+        <img
+  class="how-to-image"
+  src="how-to/repeat.png"
+  alt="Diagram showing the C section isolated and repeated side by side to demonstrate a seamless repeating tile."
+  loading="lazy"
+>
       </section>
       <section aria-labelledby="how-to-caps">
         <h3 id="how-to-caps">3. Overlap the endcaps if needed</h3>
         <p>L and R keep their shape as the element gets wider. They can extend into C to cover the joins. Draw any overlap into the original artwork; the converter detects it from the group positions.</p>
         <p>For example, if C starts at x = 80 and L reaches x = 90, the left cap overlaps the centre by 10 units. Do the same at the right join if required.</p>
-        <div class="screenshot-placeholder"><strong>Screenshot: endcap overlap</strong><span>Show a close-up of both joins with L blue, C green and R red. Mark the nominal centre boundaries and highlight the artwork overlapping each boundary.</span></div>
+        <img
+  class="how-to-image"
+  src="how-to/overlap.png"
+  alt="Diagram showing the L and R end caps overlapping the C section at both seams."
+  loading="lazy"
+>
       </section>
       <section aria-labelledby="how-to-export">
         <h3 id="how-to-export">4. Export, convert and check</h3>

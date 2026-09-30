@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Repeating Element Maker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="../assets/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <header><img src="../assets/easilLogo.png" alt="" width="24" height="24"><h1>Repeating Element Maker</h1></header>
+      <button id="drop-area" class="drop-area" type="button"><span>Click or drag to upload SVG</span></button>
+      <input id="file-input" type="file" accept=".svg,image/svg+xml" hidden>
+      <details id="paste-panel"><summary>Or paste SVG code</summary><label class="sr-only" for="input-code">SVG source</label><textarea id="input-code" rows="7" placeholder="Paste your SVG code here" spellcheck="false"></textarea><button id="convert-code" class="secondary" type="button">Convert SVG</button></details>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="result" hidden>
+        <h2>Preview</h2>
+        <div class="preview"><img id="preview" alt="SVG artwork repeated horizontally"></div>
+        <div class="range-label"><label for="preview-width">Resize preview</label><output id="width-label" for="preview-width"></output></div>
+        <input id="preview-width" type="range" min="1" max="6" step="0.1" value="3">
+        <p class="hint">Preview width does not affect your download.</p>
+        <p id="tile-size"></p>
+        <div class="actions download-actions"><button id="download" type="button">Download converted SVG</button><button id="copy" class="secondary" type="button">Copy SVG code</button></div>
+        <details><summary>Output SVG code</summary><label class="sr-only" for="output-code">Converted SVG</label><textarea id="output-code" rows="8" readonly spellcheck="false"></textarea></details>
+      </section>
+    </section>
+    <p class="info">Upload one repeatable SVG tile. Its artboard sets the tile width and height. Artwork can contain multiple shapes and groups. Repeats horizontally.</p>
+    <nav aria-label="Design utilities"><a href="../">All utilities</a></nav>
+  </main>
+</body>
+</html>

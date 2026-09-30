@@ -1,4 +1,4 @@
-import {HOOPS, RIM_Y, GRAVITY, clamp, remaining, pointsAt, makeBall, stepBall} from './physics.mjs';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project} from './physics.mjs';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 const timer = document.querySelector('#timer'), scoreEls = [document.querySelector('#p1'),document.querySelector('#p2')];
 const phase = document.querySelector('#phase'), multiplier = document.querySelector('#multiplier');
@@ -19,34 +19,43 @@ function ball(c,x,y,r,rotation=0,pink=false){
  c.beginPath();c.moveTo(-r,-r*.3);c.bezierCurveTo(-r*.2,-r*.15,r*.35,r*.45,r,r*.15);c.stroke();
  const shine=c.createRadialGradient(-r*.35,-r*.5,0,0,0,r*1.15);shine.addColorStop(0,'#ffffff28');shine.addColorStop(.65,'#00000000');shine.addColorStop(1,'#00000077');c.fillStyle=shine;c.fillRect(-r,-r,r*2,r*2);c.restore();ellipse(c,x,y,r,r,null,'#16151b',1.5);
 }
+const artwork = new Image();
+artwork.src = new URL('./backboard-reference.png', import.meta.url).href;
 function backboard(){
- // Draw the reference's pink split-panel backboard as scalable native artwork.
- b.fillStyle='#19191b';b.beginPath();b.roundRect(36,24,728,342,[58,58,0,0]);b.fill();
- b.font='italic 900 53px Arial';b.textAlign='center';b.fillStyle='#fff';b.fillText('HOOPS OF FUN',400,94);
- for(let y=77;y<97;y+=4){b.fillStyle='#19191b';b.fillRect(111,y,578,1.5);}
- path(b,[[47,157],[92,117],[708,117],[753,157],[753,356],[47,356]],'#f41c80','#030305',11);
- // Hourglass, pinstripes and white curved dividers.
- b.save();b.beginPath();b.moveTo(306,123);b.bezierCurveTo(374,217,368,271,307,350);b.lineTo(493,350);b.bezierCurveTo(432,271,426,217,494,123);b.closePath();b.clip();b.fillStyle='#0b090d';b.fillRect(300,120,200,240);
- for(let y=126;y<356;y+=8){b.fillStyle='#fb2386';b.fillRect(300,y,200,3);}b.restore();
- b.strokeStyle='#fff';b.lineWidth=5;for(const flip of [1,-1]){b.save();b.translate(400,0);b.scale(flip,1);b.beginPath();b.moveTo(-94,123);b.bezierCurveTo(-26,217,-32,271,-93,350);b.stroke();b.restore();}
- // Deterministic flecks reproduce the printed board texture without an image dependency.
- let seed=42;for(let i=0;i<2300;i++){seed=(seed*1664525+1013904223)>>>0;const x=60+seed%680;seed=(seed*1664525+1013904223)>>>0;const y=162+seed%185;b.fillStyle='#260b2b28';b.fillRect(x,y,1.4,1.4);}
- b.strokeStyle='#fff';b.lineWidth=7;for(const x of HOOPS)b.strokeRect(x-61,196,122,116);
- ball(b,400,210,52,0,true);b.font='italic 900 25px Arial';b.lineWidth=6;b.strokeStyle='#111';b.strokeText('COPIRITE',400,220);b.fillStyle='white';b.fillText('COPIRITE',400,220);
- // Sloped return ramp and cage.
- const ramp=b.createLinearGradient(0,355,0,770);ramp.addColorStop(0,'#15161a');ramp.addColorStop(1,'#303034');path(b,[[67,365],[733,365],[774,773],[26,773]],ramp);
- b.save();path(b,[[67,365],[733,365],[774,773],[26,773]],'#00000000');b.clip();
- for(const x of [220,580]){b.strokeStyle='#ffffff32';b.lineWidth=2;b.beginPath();b.moveTo(x-38,465);b.lineTo(x-72,591);b.quadraticCurveTo(x,655,x+72,591);b.lineTo(x+38,465);b.stroke();ellipse(b,x,580,34,11,null,'#ffffff28',2);}
- b.restore();
- for(const flip of [1,-1]){b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);path(b,[[40,166],[67,365],[26,773],[7,744]],'#ffffff04');for(let t=0;t<=1;t+=.09){path(b,[[40+27*t,166+199*t],[7+19*t,744+29*t]],null,'#aaa3ae35');path(b,[[40-33*t,166+578*t],[67-41*t,365+408*t]],null,'#aaa3ae35');}path(b,[[40,166],[7,744],[26,773]],null,'#8e8d93',4);b.restore();}
+ b.clearRect(0,0,800,800);
+ // Display the actual left-hand artwork from the supplied reference at its native
+ // aspect ratio. Clip the white corners, without redrawing any of the print design.
+ if(artwork.complete && artwork.naturalWidth){
+  b.save();b.beginPath();b.roundRect(36,24,728,432,[65,65,0,0]);b.clip();
+  const sourceScale=artwork.naturalWidth/1920;
+  b.drawImage(artwork,155*sourceScale,213*sourceScale,746*sourceScale,443*sourceScale,36,24,728,432);b.restore();
+ }
+ const ramp=b.createLinearGradient(0,456,0,780);ramp.addColorStop(0,'#15161a');ramp.addColorStop(1,'#303034');
+ path(b,[[47,456],[753,456],[774,773],[26,773]],ramp);
+ for(const x of HOOPS){b.strokeStyle='#ffffff32';b.lineWidth=2;b.beginPath();b.moveTo(x-38,490);b.lineTo(x-72,591);b.quadraticCurveTo(x,655,x+72,591);b.lineTo(x+38,490);b.stroke();ellipse(b,x,580,34,11,null,'#ffffff28',2);}
+ for(const flip of [1,-1]){
+  b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
+  path(b,[[40,166],[47,456],[26,773],[7,744]],'#ffffff04');
+  for(let t=0;t<=1;t+=.09){path(b,[[40+7*t,166+290*t],[7+19*t,744+29*t]],null,'#aaa3ae35');path(b,[[40-33*t,166+578*t],[47-21*t,456+317*t]],null,'#aaa3ae35');}
+  path(b,[[40,166],[7,744],[26,773]],null,'#8e8d93',4);b.restore();
+ }
  path(b,[[26,775],[774,775]],null,'#aaa7ad',7);
- b.font='700 12px Arial';b.fillStyle='#c1b5c1';b.fillText('P1',220,758);b.fillText('P2',580,758);
+ b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],758);b.fillText('P2',HOOPS[1],758);
 }
+artwork.addEventListener('load',backboard);
+artwork.addEventListener('error',()=>{message.textContent='Backboard image could not load. Reload the page to try again.';});
 backboard();
-function net(x,now){const wobble=flashes.some(f=>f.lane===HOOPS.indexOf(x)&&now-f.time<500)?Math.sin(now/40)*4:0;
- for(let i=0;i<7;i++){const a=x-47+i*94/6,z=x-28+i*56/6+wobble;path(ctx,[[a,RIM_Y],[z,RIM_Y+73]],null,i%2?'#dddde2':'#bbc2d6',1.5);}
- for(let i=0;i<6;i++){path(ctx,[[x-47+i*94/6,RIM_Y],[x-28+(i+1)*56/6+wobble,RIM_Y+73]],null,'#dddde2',1);}
- ellipse(ctx,x+wobble,RIM_Y+73,28,7,null,'#3270b6',2);ellipse(ctx,x,RIM_Y,49,11,null,'#9a3b15',7);
+function net(x,now,front){
+ const wobble=flashes.some(f=>f.lane===HOOPS.indexOf(x)&&now-f.time<500)?Math.sin(now/40)*4:0;
+ ctx.save();ctx.strokeStyle=front?'#dddde2':'#7b8190';ctx.lineWidth=1.5;
+ // Crossed cords follow the front/back half of the elliptical rim.
+ for(let i=0;i<8;i++){
+  const angle=(front?0:Math.PI)+i*Math.PI/7;
+  const a=x+49*Math.cos(angle),ay=RIM_Y+13*Math.sin(angle);
+  for(const offset of [-.28,.28])path(ctx,[[a,ay],[x+28*Math.cos(angle+offset)+wobble,RIM_Y+70+7*Math.sin(angle+offset)]],null,front?'#dddde2':'#7b8190',1.3);
+ }
+ ctx.beginPath();ctx.ellipse(x+wobble,RIM_Y+70,28,7,0,front?0:Math.PI,front?Math.PI:2*Math.PI);ctx.strokeStyle='#3270b6';ctx.lineWidth=2;ctx.stroke();
+ ctx.beginPath();ctx.ellipse(x,RIM_Y,49,13,0,front?0:Math.PI,front?Math.PI:2*Math.PI);ctx.strokeStyle=front?'#f28338':'#ae4b21';ctx.lineWidth=6;ctx.stroke();ctx.restore();
 }
 function shoot(lane,dx,dy){const now=performance.now();if(now-cooldown[lane]<350)return;cooldown[lane]=now;balls.push(makeBall(lane,dx,dy,running?round:-1));}
 function sync(now){
@@ -62,25 +71,33 @@ canvas.addEventListener('pointermove',e=>{const d=drags.get(e.pointerId);if(d)d.
 canvas.addEventListener('pointerup',e=>{const d=drags.get(e.pointerId);if(!d)return;const p=coords(e),dy=d.start.y-p.y;if(dy>15)shoot(d.lane,p.x-d.start.x,dy);drags.delete(e.pointerId);});
 for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,e=>drags.delete(e.pointerId));
 window.addEventListener('keydown',e=>{const key=e.key.toLowerCase();if(!['a','l'].includes(key)||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA/.test(e.target.tagName))return;e.preventDefault();if(!keys.has(key))keys.set(key,performance.now());});
-window.addEventListener('keyup',e=>{const key=e.key.toLowerCase(),pressed=keys.get(key);if(pressed===undefined)return;shoot(key==='a'?0:1,0,(940+clamp((performance.now()-pressed)/1000,0,1)*180)/3.4);keys.delete(key);});
+window.addEventListener('keyup',e=>{const key=e.key.toLowerCase(),pressed=keys.get(key);if(pressed===undefined)return;shoot(key==='a'?0:1,0,280+clamp((performance.now()-pressed)/1000,0,1)*90);keys.delete(key);});
 window.addEventListener('blur',()=>{keys.clear();drags.clear();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();drags.clear();balls=[];}sync(performance.now());});
+function drawBall(item){const p=project(item.x,item.h,item.z);ball(ctx,p.x,p.y,p.radius,item.age*2.8);}
 function frame(now){
- const dt=Math.min((now-last)/1000,.05);last=now;sync(now);ctx.clearRect(0,0,800,800);ctx.drawImage(board,0,0);HOOPS.forEach(x=>net(x,now));
- for(const d of drags.values()){
-  const dy=d.start.y-d.end.y;if(dy<=15)continue;const sample=makeBall(d.lane,d.end.x-d.start.x,dy,-1);
-  for(let t=.06;t<.7;t+=.06){const x=sample.x+sample.vx*t,y=sample.y+sample.vy*t+GRAVITY*t*t/2;ellipse(ctx,x,y,3,3,'#ffffff99');}
- }
+ const dt=Math.min((now-last)/1000,.05);last=now;sync(now);
  for(const item of balls){
   const lane=stepBall(item,dt);
   if(lane!==-1){let value=0;if(running&&item.round===round){value=pointsAt(remaining(deadline,now));scores[lane]+=value;scoreEls[lane].value=String(scores[lane]).padStart(2,'0');}flashes.push({lane,time:now,label:value?`+${value}`:'NICE!'});}
-  const size=clamp(36-item.age*18,15,36);ball(ctx,item.x,item.y,size,item.age*2.8);
  }
- balls=balls.filter(item=>item.age<4&&item.y<850&&item.x>-100&&item.x<900);
- // Front of each hoop overlays the ball as it drops through.
- for(const x of HOOPS){ctx.beginPath();ctx.ellipse(x,RIM_Y,49,11,0,0,Math.PI);ctx.strokeStyle='#f28338';ctx.lineWidth=6;ctx.stroke();}
+ balls=balls.filter(item=>item.age<6&&item.x>-400&&item.x<1200);
+ ctx.clearRect(0,0,800,800);ctx.drawImage(board,0,0);
+ for(const item of balls){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
+ for(const d of drags.values()){
+  const dy=d.start.y-d.end.y;if(dy<=15)continue;const sample=makeBall(d.lane,d.end.x-d.start.x,dy,-1);
+  for(let i=0;i<15;i++){stepBall(sample,.05);const p=project(sample.x,sample.h,sample.z);ellipse(ctx,p.x,p.y,3,3,'#ffffff99');}
+ }
+ const ordered=[...balls].sort((a,b)=>b.z-a.z);
+ // Balls in front of the hoop must cover its rim/net on the way up. Balls
+ // arriving at hoop depth sit between its back and front halves on the way down.
+ ordered.filter(item=>item.z>1.08).forEach(drawBall);
+ HOOPS.forEach(x=>net(x,now,false));
+ ordered.filter(item=>item.z>=.92&&item.z<=1.08).forEach(drawBall);
+ HOOPS.forEach(x=>net(x,now,true));
+ ordered.filter(item=>item.z<.92).forEach(drawBall);
  flashes=flashes.filter(f=>now-f.time<800);for(const f of flashes){ctx.save();ctx.globalAlpha=1-(now-f.time)/800;ctx.font='900 25px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(f.label,HOOPS[f.lane],RIM_Y-30-(now-f.time)/20);ctx.restore();}
- for(let lane=0;lane<2;lane++){ellipse(ctx,HOOPS[lane],723,44,10,'#00000060');ball(ctx,HOOPS[lane],684,37,-.4);const held=keys.get(lane?'l':'a');if(held!==undefined){ctx.fillStyle='#ff2582';ctx.fillRect(HOOPS[lane]-38,738,76*clamp((now-held)/1000,0,1),4);}}
+ for(let lane=0;lane<2;lane++){ellipse(ctx,HOOPS[lane],730,44,10,'#00000060');ball(ctx,HOOPS[lane],684,40,-.4);const held=keys.get(lane?'l':'a');if(held!==undefined){ctx.fillStyle='#ff2582';ctx.fillRect(HOOPS[lane]-38,738,76*clamp((now-held)/1000,0,1),4);}}
  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

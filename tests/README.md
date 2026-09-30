@@ -93,3 +93,9 @@ Run `node tests/basketball.test.cjs` with the same HTTP server and Playwright
 setup. Checks cover downward basket detection, misses, separate P1/P2 scoring,
 30-second rounds, 20/10-second multipliers, free play, restart, mouse swipes,
 real mobile touch events and narrow layouts. The unlisted page is `/basketball/`.
+
+Basketball rendering uses the supplied backboard reference image, cropped at
+runtime without changing its artwork. Ball size and position use the same depth
+projection as scoring. Regression checks cover the arc clearing the rim, ball
+size at hoop depth and short shots that must not score. The browser check also
+captures the approach and net-entry frames for visual review.

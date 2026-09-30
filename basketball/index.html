@@ -5,23 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Hoops of Fun</title>
-  <link rel="stylesheet" href="styles.css?v=2">
-  <script type="module" src="game.js?v=2"></script>
+  <link rel="stylesheet" href="styles.css?v=3">
+  <script type="module" src="game.js?v=3"></script>
 </head>
 <body>
   <main>
     <header><span class="eyebrow">COPIRITE / OFFICE ARCADE</span><span class="tag">2 HOOPS · 30 SECONDS</span></header>
+    <div class="game-layout">
     <div class="machine">
-      <canvas id="court" width="800" height="800" tabindex="0" aria-label="Basketball court. Swipe a ball upwards towards either hoop. Keyboard: A shoots left; L shoots right."></canvas>
+      <canvas id="court" width="800" height="800" tabindex="0" aria-label="Basketball court. Mouse: grab a ball, drag horizontally to aim, release when the power meter is green. Keyboard: P1 uses A and D to aim, hold and release W to shoot. P2 uses left and right arrows to aim, hold and release up arrow to shoot. Touch: swipe a ball upwards."></canvas>
       <div class="scoreboard" aria-label="Scoreboard">
         <div class="clock"><span>TIME</span><output id="timer">30</output></div>
         <div class="scores"><div><span>P1</span><output id="p1">00</output></div><div><span>P2</span><output id="p2">00</output></div></div>
       </div>
       <div class="round-status"><span id="phase">FREE PLAY</span><span id="multiplier">1 PT / BASKET</span></div>
     </div>
-    <div class="controls"><button id="start" type="button">Start round <span>↗</span></button><p id="message" role="status" aria-live="polite">Shoot anytime. Start a round to keep score.</p></div>
-    <p class="help">Swipe a ball up towards a hoop. Longer swipes throw harder.<br><kbd>A</kbd> left hoop <span class="divider">/</span> <kbd>L</kbd> right hoop · Hold for more power.</p>
-    <p class="rules">1 point per basket · 20s left: double · 10s left: triple</p>
+    <aside class="panel" aria-label="Game controls and statistics">
+      <div class="controls"><button id="start" type="button">Start round <span>↗</span></button><p id="message" role="status" aria-live="polite">Practice anytime. Start a round to keep score.</p></div>
+      <div class="player-stats">
+        <section><h2>P1 <span>LEFT HOOP</span></h2><dl><div><dt>Made / shots</dt><dd id="accuracy0">0/0 · 0%</dd></div><div><dt>Streak</dt><dd id="streak0">0</dd></div><div><dt>Best score</dt><dd id="best0">0</dd></div></dl></section>
+        <section><h2>P2 <span>RIGHT HOOP</span></h2><dl><div><dt>Made / shots</dt><dd id="accuracy1">0/0 · 0%</dd></div><div><dt>Streak</dt><dd id="streak1">0</dd></div><div><dt>Best score</dt><dd id="best1">0</dd></div></dl></section>
+      </div>
+      <div class="instructions">
+        <h2>HOW TO SHOOT</h2>
+        <p><strong>Mouse</strong> Grab a ball and drag left/right to aim. Hold to charge; release in the green zone.</p>
+        <p><strong>Keyboard</strong> P1: <kbd>A</kbd> <kbd>D</kbd> aim, hold <kbd>W</kbd> to charge. P2: <kbd>←</kbd> <kbd>→</kbd> aim, hold <kbd>↑</kbd> to charge. Release to shoot.</p>
+        <p><strong>Touch</strong> Swipe a ball towards the hoop. Longer swipes throw harder.</p>
+        <p class="note">Line up the sight with the hoop. New balls return to different spots, so adjust your aim.</p>
+      </div>
+      <div class="panel-footer"><button id="sound" class="quiet-button" type="button" aria-pressed="false">Sound off</button><span>30 SECOND ROUNDS</span></div>
+      <p class="rules">1 point per basket<br>20s left: double · 10s left: triple</p>
+    </aside>
+    </div>
   </main>
 </body>
 </html>

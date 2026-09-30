@@ -90,12 +90,19 @@ empty sections, in the target design app before relying on its importer behaviou
 ## Hidden basketball game
 
 Run `node tests/basketball.test.cjs` with the same HTTP server and Playwright
-setup. Checks cover downward basket detection, misses, separate P1/P2 scoring,
-30-second rounds, 20/10-second multipliers, free play, restart, mouse swipes,
-real mobile touch events and narrow layouts. The unlisted page is `/basketball/`.
+setup. The unlisted page is `/basketball/`.
 
-Basketball rendering uses the supplied backboard reference image, cropped at
-runtime without changing its artwork. Ball size and position use the same depth
-projection as scoring. Regression checks cover the arc clearing the rim, ball
-size at hoop depth and short shots that must not score. The browser check also
-captures the approach and net-entry frames for visual review.
+Tests cover separate hoop scores, timer multipliers, free play, restart,
+mouse aiming and timed release, simultaneous two-player keyboard controls,
+real mobile touch, cancellation, accuracy/streaks and saved best scores.
+Quick clicks and badly aimed releases are explicitly checked to miss.
+Physics checks cover scoring at 30/60/144 fps, shifted launch positions,
+rim/backboard collisions, settling floor bounces, arc clearance and ball size.
+Browser screenshots include desktop charging and narrow layouts.
+
+The supplied backboard reference is cropped at runtime without redrawing it.
+Balls share a depth projection for rendering and collision detection. Desktop
+uses A/D + W for P1 and left/right + up for P2; mouse movement adjusts aim
+while a repeating charge meter controls power. Touch retains swipe shooting.
+Each new ball returns to another rack position. Best scores use localStorage
+(with an in-memory fallback); sound is optional and starts off.

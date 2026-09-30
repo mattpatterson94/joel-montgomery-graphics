@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 1000" preserveAspectRatio="none">
+ <defs>
+  <pattern id="hatch" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(34)"><path d="M0 0V80" stroke="#286683" stroke-width="9"/></pattern>
+  <pattern id="flecks" width="47" height="61" patternUnits="userSpaceOnUse"><path d="m7 9 2 4m23 19-1 5m-15 15 1 2m25-43-1 3" fill="none" stroke="#bfe1d5" stroke-opacity=".38" stroke-width="2"/></pattern>
+ </defs>
+ <path fill="#164765" d="M0 0h540v1000H0z"/>
+ <path fill="url(#hatch)" d="M300 0h240v1000H340C400 610 310 300 300 0"/>
+ <path fill="#f57455" d="M0 300C80 420 64 610 138 690L215 1000H0Z M464 0H540V1000H505C471 808 517 670 464 481S444 200 464 0"/>
+ <path fill="#8bc9cb" d="M0 0H136C105 70 123 166 87 233S71 338 124 441L177 556C104 501 71 489 35 398L0 387Z"/>
+ <path fill="#092e40" d="M21 0H86C56 164 117 197 30 228L0 269V183C48 144 19 87 21 0Z"/>
+ <path fill="#08969e" d="M240 0H347C352 162 420 316 391 486S472 755 470 1000H322C346 901 264 755 290 625S239 383 255 254S206 115 240 0Z"/>
+ <path fill="url(#flecks)" d="M240 0H347C352 162 420 316 391 486S472 755 470 1000H322C346 901 264 755 290 625S239 383 255 254S206 115 240 0Z"/>
+ <path fill="#53b8bf" d="m287 689 95 105-42 55 100 73-104-25-2 103h-45c61-139-35-202-2-311Z"/>
+ <g fill="none" stroke="#092e40" stroke-width="15" stroke-linecap="round"><path d="M-70 968 233 647M-70 1060 249 698M20 1100 268 789M-40 840 207 588"/></g>
+ <path d="M503 0C490 161 534 199 520 333" fill="none" stroke="#f2d9ca" stroke-width="15" stroke-dasharray="2 6 8 3 2 10" opacity=".65"/>
+</svg>

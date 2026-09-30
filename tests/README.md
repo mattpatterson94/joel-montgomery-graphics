@@ -86,3 +86,42 @@ outline strokes/text and flatten gradients, linked content and live effects.
 Empty cells retain an empty named group, useful for hollow frames. Preview resizing
 simulates fixed thirds and stretching centre/edges; test all directions, especially
 empty sections, in the target design app before relying on its importer behaviour.
+
+## Hidden basketball game
+
+Run `node tests/basketball.test.cjs` with the same HTTP server and Playwright
+setup. The unlisted page is `/basketball/`.
+
+Mouse and touch share a drag-and-release throw. Direction, drag distance and a
+small contribution from recent release velocity determine the shot. There is no
+pointer power meter or hold-to-charge timer. The ball follows the hand within the
+return area; a short, fading arc uses the same launch state and gravity. Each
+new ball returns to a different rack position. Keyboard controls remain under
+the expandable help section. Best scores use localStorage with an in-memory
+fallback; sound starts off.
+
+The supplied backboard reference is cropped at runtime without redrawing it.
+Ball rendering uses a textured sphere with three-axis rotation, curved tricolour
+panels and surface grain. Distant/mobile balls use smaller cached sprites.
+Net cords have fixed rim anchors and deform as the ball passes; a swish stretches
+the collar downward, while rim/offset entries add restrained lateral movement.
+Reduced-motion preferences disable the extra net reaction and score-label travel.
+
+Sound effects are generated locally with Web Audio, not downloaded recordings:
+filtered noise for net friction/swish, short resonances for metal rim and hollow
+backboard contacts, and a rubber impact for floor bounces. Volume follows impact
+strength; left/right positioning follows the ball. Basket scoring has no beep.
+
+Tests cover slow/fast mouse throws, real high-DPI mobile touch, sample-rate
+independence, release continuity, shifted rack positions, misses, cancellation,
+preview/physics consistency, net settling, multi-axis spin, keyboard fallback,
+scoring/multipliers and saved statistics. Physics checks run at 30/60/144 fps.
+Offline audio renders verify each material effect is non-silent and unclipped.
+Desktop drag, net-entry and mobile screenshots support visual review.
+
+The court is 800 × 960 logical units, with a longer ball return. Ball radius is
+52 units; the rendered rim radius is 64 units, with the physics ring scaled to
+match. Shots reach hoop depth in roughly 0.9 seconds. Favicon PNGs at 32 and
+192 pixels extract the Copirite wordmark and pink ball from the supplied image.
+Bounce audio adds irregular broadband contact noise and compressed rubber-body
+resonance rather than relying on a clean sliding tone.

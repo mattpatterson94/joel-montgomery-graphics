@@ -10,6 +10,7 @@
   const allowed = new Set('svg g symbol marker defs style title desc metadata path polygon polyline rect circle ellipse line use linearGradient radialGradient stop clipPath mask pattern filter feFlood feOffset feComposite feColorMatrix feGaussianBlur feBlend feMerge feMergeNode feComponentTransfer feFuncR feFuncG feFuncB feFuncA feMorphology'.split(' '));
   let model = null, filename = 'element', generation = 0, advanced = false;
   const selected = new Set();
+  let backgroundPromise = null, lastThumbnail = null, downloading = false;
   const shapeSelector = 'path,polygon,polyline,rect,circle,ellipse';
   const definitionSelector = 'defs,clipPath,mask,pattern,symbol,marker';
 
@@ -109,7 +110,9 @@
         if (!Object.values(box).every(Number.isFinite) || box.width <= 0 || box.height <= 0) reason = 'This shape has no filled area.';
         const clipRule = computed.getPropertyValue('clip-rule') === 'evenodd' || computed.fillRule === 'evenodd' ? 'evenodd' : 'nonzero';
         shape.setAttribute('data-mask-shape', index);
-        shapes.push({index, label:shape.id || `${shape.localName} ${index+1}`, box, clipRule, reason});
+        const parentMatrix = live.getScreenCTM().inverse().multiply(shape.parentElement.getScreenCTM());
+        const rootToParent = parentMatrix.inverse();
+        shapes.push({rootToParent:[rootToParent.a,rootToParent.b,rootToParent.c,rootToParent.d,rootToParent.e,rootToParent.f], index, label:shape.id || `${shape.localName} ${index+1}`, box, clipRule, reason});
       }
       if (!shapes.length) throw new Error('No selectable vector shapes found. Outline text and expand symbols or linked copies before exporting.');
       const hasOtherArtwork = [...live.querySelectorAll('use,line')].some(el => !el.closest(definitionSelector));
@@ -121,7 +124,7 @@
     for(let parent=el.parentElement;parent;parent=parent.parentElement){result.push(parent);if(parent===root)break;}
     return result;
   }
-  function build(data, choices) {
+  function build(data, choices, background = null) {
     const svg = data.root.cloneNode(true);
     svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', XLINK);
     const ids = new Set([svg.id,...[...svg.querySelectorAll('[id]')].map(el=>el.id)]);
@@ -133,7 +136,16 @@
       const wrapper=svgNode('g'), clip=svgNode('clipPath',{id:unique('clippath'),clipPathUnits:'userSpaceOnUse'});
       const group=svgNode('g',{id:unique('clip_1'),'clip-path':`url(#${clip.id})`});
       const image=svgNode('image',{overflow:'visible',...Object.fromEntries(Object.entries(item.box).map(([k,v])=>[k,number(v)]))});
-      image.setAttributeNS(XLINK,'xlink:href','');
+      image.setAttributeNS(XLINK,'xlink:href',background || '');
+      if (background) {
+        const [x,y,width,height] = svg.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number);
+        const side = Math.max(width,height);
+        image.setAttribute('x',number(x+(width-side)/2));
+        image.setAttribute('y',number(y+(height-side)/2));
+        image.setAttribute('width',number(side));image.setAttribute('height',number(side));
+        image.setAttribute('transform',`matrix(${item.rootToParent.map(number).join(' ')})`);
+        image.setAttribute('preserveAspectRatio','xMidYMid meet');
+      }
       shape.replaceWith(wrapper);
       // Preserve shape opacity on the image wrapper, but strip its original paint.
       for(const prop of ['opacity','display','visibility']) {
@@ -147,11 +159,55 @@
       clip.append(shape);group.append(image);wrapper.append(clip,group);
     }
     svg.querySelectorAll('[data-mask-shape]').forEach(el=>el.removeAttribute('data-mask-shape'));
+    if (background) {
+      const [, , w, h] = svg.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number);
+      const scale = 240/Math.max(w,h);
+      svg.setAttribute('width',number(w*scale));svg.setAttribute('height',number(h*scale));
+      svg.style.setProperty('width',`${number(w*scale)}px`);svg.style.setProperty('height',`${number(h*scale)}px`);
+      svg.style.setProperty('overflow','hidden');
+      svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+    }
     return '<?xml version="1.0" encoding="UTF-8"?>\n'+serialise(svg);
+  }
+  async function backgroundImage() {
+    if (!backgroundPromise) {
+      backgroundPromise = (async () => {
+        const response = await fetch('shapeMaskBackground.png');
+        if (!response.ok) throw new Error('Could not load the thumbnail pattern. Please try again.');
+        const blob = await response.blob();
+        return new Promise((resolve,reject) => {
+          const reader = new FileReader();reader.onload=()=>resolve(reader.result);
+          reader.onerror=()=>reject(new Error('Could not read the thumbnail pattern.'));
+          reader.readAsDataURL(blob);
+        });
+      })().catch(error=>{backgroundPromise=null;throw error;});
+    }
+    return backgroundPromise;
+  }
+  async function thumbnail(data, choices) {
+    const source = build(data, choices, await backgroundImage());
+    const url = URL.createObjectURL(new Blob([source],{type:'image/svg+xml'}));
+    try {
+      const image = new Image();image.src=url;await image.decode();
+      const canvas = document.createElement('canvas');canvas.width=canvas.height=240;
+      const [, , w, h] = data.root.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number);
+      const scale=240/Math.max(w,h), width=w*scale, height=h*scale;
+      canvas.getContext('2d').drawImage(image,(240-width)/2,(240-height)/2,width,height);
+      return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not generate the PNG thumbnail.')),'image/png'));
+    } finally {URL.revokeObjectURL(url);}
+  }
+  async function downloadPair(data, choices, name, token) {
+    const svg = build(data, choices);
+    const png = await thumbnail(data, choices);
+    if (token!==generation) return;
+    save(svg,`${name}-processed.svg`);
+    save(png,`${name}-thumbnail.png`);
+    lastThumbnail={blob:png,name:`${name}-thumbnail.png`};
+    $('download-thumbnail').hidden=false;
   }
   function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
   function save(text,name){
-    const url=URL.createObjectURL(new Blob([text],{type:'image/svg+xml'}));
+    const url=URL.createObjectURL(text instanceof Blob ? text : new Blob([text],{type:'image/svg+xml'}));
     const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   function refresh() {
@@ -167,7 +223,7 @@
       if(active){shape.style.setProperty('fill','#3184fc','important');shape.style.setProperty('fill-opacity','.6','important');shape.style.setProperty('stroke','#083f81','important');shape.style.setProperty('stroke-width','2px','important');shape.style.setProperty('vector-effect','non-scaling-stroke','important');}
     }
     $('selection-count').textContent=`${selected.size} ${selected.size===1?'mask':'masks'} selected`;
-    $('download').disabled=$('copy').disabled=selected.size===0;
+    $('download').disabled=selected.size===0 || downloading;$('copy').disabled=selected.size===0;
     $('output').value=selected.size?build(model,selected):'';
   }
   function toggle(index){const item=model.shapes[index];if(item.reason){status(item.reason,true);return;}if(selected.has(index))selected.delete(index);else selected.add(index);refresh();}
@@ -190,18 +246,18 @@
     $('editor').hidden=false;refresh();status(`${name} · Choose shapes in the preview or list.`);
   }
   function setMode(value){
-    advanced=value;++generation;model=null;selected.clear();
+    advanced=value;++generation;model=null;selected.clear();lastThumbnail=null;$('download-thumbnail').hidden=true;
     $('advanced').hidden=!advanced;$('editor').hidden=true;$('output').value='';
     $('mode-switcher').textContent=advanced?'Simple Mode':'Advanced Mode';
     $('mode-switcher').setAttribute('aria-pressed',String(advanced));
     $('file-input').multiple=!advanced;
-    $('instructions').textContent=advanced?'Upload one SVG, then select each shape that should become an image mask. Unselected artwork stays in place.':'Upload a single-shape SVG to download its mask automatically. Use Advanced Mode to choose masks and keep other artwork.';
+    $('instructions').textContent=advanced?'Upload one SVG, then select each shape that should become an image mask. Unselected artwork stays in place.':'Upload a single-shape SVG to download its SVG and PNG thumbnail automatically. Use Advanced Mode to choose masks and keep other artwork.';
     status('');
   }
   async function upload(files){
     if(!files.length)return;
     if(advanced && files.length!==1){status('Upload one SVG at a time in Advanced Mode.',true);return;}
-    const token=++generation, mode=advanced;model=null;$('editor').hidden=true;selected.clear();$('output').value='';
+    const token=++generation, mode=advanced;lastThumbnail=null;$('download-thumbnail').hidden=true;model=null;$('editor').hidden=true;selected.clear();$('output').value='';
     const messages=[];let failed=false;
     for(const file of files){
       if(token!==generation)return;
@@ -213,8 +269,8 @@
         const data=await inspect(text);if(token!==generation)return;
         if(mode){await showEditor(data,file.name,token);return;}
         if(data.shapes.length!==1 || data.hasOtherArtwork)throw new Error('Use Advanced Mode to choose which shapes become masks.');
-        save(build(data,new Set([data.shapes[0].index])),file.name.replace(/\.svg$/i,'')+'-processed.svg');
-        messages.push(`${file.name} · Downloaded`);
+        await downloadPair(data,new Set([data.shapes[0].index]),file.name.replace(/\.svg$/i,''),token);
+        messages.push(`${file.name} · SVG and PNG downloads started`);
       }catch(error){failed=true;messages.push(`${file.name} · ${error.message}`);}
     }
     if(token===generation)status(messages.join('\n'),failed);
@@ -227,7 +283,14 @@
   for(const event of ['dragleave','drop'])$('drop-area').addEventListener(event,()=>$('drop-area').classList.remove('highlight'));
   $('drop-area').addEventListener('drop',event=>upload([...event.dataTransfer.files]));
   $('clear').addEventListener('click',()=>{selected.clear();refresh();});
-  $('download').addEventListener('click',()=>{if(model && selected.size)save(build(model,selected),`${filename}-processed.svg`);});
+  $('download').addEventListener('click',async()=>{
+    if(!model || !selected.size || downloading)return;
+    const token=generation;downloading=true;$('download').disabled=true;
+    try {await downloadPair(model,new Set(selected),filename,token);if(token===generation)status('SVG and PNG downloads started.');}
+    catch(error){if(token===generation)status(error.message,true);}
+    finally {downloading=false;if(model && token===generation)refresh();}
+  });
+  $('download-thumbnail').addEventListener('click',()=>{if(lastThumbnail)save(lastThumbnail.blob,lastThumbnail.name);});
   $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output').value);status('SVG code copied.');}catch{$('output').closest('details').open=true;$('output').select();status('Select and copy the output code below.');}});
-  window.ShapeMask={inspect,build};
+  window.ShapeMask={inspect,build,thumbnail};
 })();

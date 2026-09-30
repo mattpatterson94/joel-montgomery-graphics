@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="../assets/favicon.ico">
-  <link rel="stylesheet" href="styles.css">
-  <script src="script.js" defer></script>
+  <link rel="stylesheet" href="styles.css?v=thumbnails-1">
+  <script src="script.js?v=thumbnails-1" defer></script>
 </head>
 <body>
   <main class="container">
@@ -28,12 +28,13 @@
             <div><h3>Shapes</h3><div id="shape-list" class="shape-list"></div></div>
           </div>
           <p id="selection-count" role="status" aria-live="polite"></p>
-          <div class="actions"><button id="download" type="button" disabled>Download processed SVG</button><button id="copy" class="secondary" type="button" disabled>Copy SVG code</button></div>
+          <div class="actions"><button id="download" type="button" disabled>Download SVG + PNG</button><button id="copy" class="secondary" type="button" disabled>Copy SVG code</button></div>
           <details><summary>Output SVG code</summary><label class="sr-only" for="output">Processed SVG</label><textarea id="output" rows="8" readonly spellcheck="false"></textarea></details>
         </div>
       </section>
+      <button id="download-thumbnail" class="secondary" type="button" hidden>Download PNG again</button>
     </section>
-    <p id="instructions" class="info">Upload a single-shape SVG to download its mask automatically. Use Advanced Mode to choose masks and keep other artwork.</p>
+    <p id="instructions" class="info">Upload a single-shape SVG to download its SVG and PNG thumbnail automatically. Use Advanced Mode to choose masks and keep other artwork.</p>
     <nav aria-label="Design utilities"><a href="../">All utilities</a></nav>
   </main>
 </body>

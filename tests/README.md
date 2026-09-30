@@ -68,3 +68,21 @@ dimensions; the test intentionally expects the actual clipping bounds instead.
 These checks do not replace importing generated files into the design app.
 
 Thumbnail coverage: run `node tests/shape-mask-thumbnail.test.cjs` with the same server/browser setup. Checks cover the shared grid across transformed masks, non-zero viewBox origins, 240px output, transparent wide/tall padding, compound holes, solid artwork, unchanged SVG placeholders and paired downloads in both modes.
+
+
+## Stretchable Shape Creator
+
+Run `node tests/stretchable.test.cjs` with the same HTTP server and Playwright
+setup. Tests check horizontal, vertical and nine-slice output; actual path bounds
+inside equal thirds; rendering against the original demo and a multicolour shape;
+compound holes and empty centre sections; transformed groups and opacity;
+download/preview separation; direction controls; mobile layout; and rejected
+unsupported inputs.
+
+The creator vendors Paper.js 0.12.18 (MIT) for curve intersections, with its
+license in `tools/stretchable/vendor/`. Output contains real paths, not clipping
+wrappers. Filled paths and basic vector shapes are supported. Designers must
+outline strokes/text and flatten gradients, linked content and live effects.
+Empty cells retain an empty named group, useful for hollow frames. Preview resizing
+simulates fixed thirds and stretching centre/edges; test all directions, especially
+empty sections, in the target design app before relying on its importer behaviour.

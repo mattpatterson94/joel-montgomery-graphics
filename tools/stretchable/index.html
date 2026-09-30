@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stretchable Shape Creator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" href="../assets/favicon.ico">
+  <link rel="stylesheet" href="styles.css?v=1">
+  <script src="vendor/paper-full.min.js" defer></script>
+  <script src="script.js?v=1" defer></script>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <header><img src="../assets/easilLogo.png" alt="" width="24" height="24"><h1>Stretchable Shape Creator</h1></header>
+      <fieldset class="direction"><legend>Stretch direction</legend>
+        <div class="direction-options">
+          <label><input type="radio" name="direction" value="horizontal" checked><span><b aria-hidden="true">↔</b>Horizontal<small>3 equal columns</small></span></label>
+          <label><input type="radio" name="direction" value="vertical"><span><b aria-hidden="true">↕</b>Vertical<small>3 equal rows</small></span></label>
+          <label><input type="radio" name="direction" value="both"><span><b aria-hidden="true">↔ ↕</b>Both directions<small>3 × 3 equal sections</small></span></label>
+        </div>
+      </fieldset>
+      <button id="drop-area" class="drop-area" type="button">Click or drag to upload SVG</button>
+      <input id="file-input" type="file" accept=".svg,image/svg+xml" hidden>
+      <p id="status" role="status" aria-live="polite"></p>
+      <section id="result" hidden>
+        <div class="preview-heading"><h2>Resize preview</h2><label><input id="guides" type="checkbox" checked> Show divisions</label></div>
+        <div class="preview"><img id="preview" alt="Stretchable artwork with the selected preview dimensions"></div>
+        <div class="sliders">
+          <label>Width <output id="width-label" for="preview-width"></output><input id="preview-width" type="range" min="0.7" max="3" step="0.01" value="1"></label>
+          <label>Height <output id="height-label" for="preview-height"></output><input id="preview-height" type="range" min="0.7" max="3" step="0.01" value="1"></label>
+        </div>
+        <button id="reset-preview" class="secondary" type="button">Reset preview</button>
+        <p class="hint">Preview resizing and guides do not affect the downloaded SVG. Fixed ends or corners set the minimum preview size.</p>
+        <p id="sections"></p>
+        <div class="actions"><button id="download" type="button">Download stretchable SVG</button><button id="copy" class="secondary" type="button">Copy SVG code</button></div>
+        <details><summary>Output SVG code</summary><label class="sr-only" for="output">Converted SVG</label><textarea id="output" rows="8" readonly spellcheck="false"></textarea></details>
+      </section>
+    </section>
+    <p class="info">Fit the artboard to your artwork. Use filled vector shapes and outline strokes and text before exporting. Sections are cut into equal thirds of the artboard.</p>
+    <nav aria-label="Design utilities"><a href="../">All utilities</a></nav>
+  </main>
+</body>
+</html>

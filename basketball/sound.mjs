@@ -2,7 +2,7 @@
 const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact']};
 const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
 export class CourtAudio {
- constructor(context=null){this.context=context;this.enabled=false;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
+ constructor(context=null){this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
  unlock(){
   if(!this.enabled)return;
   try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended'&&typeof this.context.startRendering!=='function')this.context.resume().catch(()=>{});this.loadSamples();}catch{}

@@ -65,6 +65,16 @@ const {chromium}=require('playwright');
  const icon=await page.request.get('http://localhost:8765/basketball/favicon-32.png');assert.equal(icon.status(),200);
  const response=page.waitForResponse(r=>r.url().endsWith('backboard-reference.png'));
  await page.goto('http://localhost:8765/basketball/');assert.equal((await response).status(),200);
+ await page.clock.runFor(32);
+ assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true','sound starts enabled');
+ // A ball wholly inside the display bounds must alter its composited pixels.
+ // This catches the original HTML-overlay bug, not just a z-index declaration.
+ const displayBefore=await page.locator('.scoreboard').screenshot();
+ await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=10');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
+ const displayAfter=await page.locator('.scoreboard').screenshot();
+ assert.equal(displayBefore.equals(displayAfter),false,'ball paints in front of scoreboard');
+ await page.screenshot({path:'/tmp/hoops-scoreboard-layer.png',fullPage:true});
+ await page.clock.runFor(32);
  const score=async id=>Number(await page.locator(id).textContent());
  const shots=[0,0];
  async function start(){await page.locator('#start').click();shots.fill(0);}
@@ -96,7 +106,7 @@ const {chromium}=require('playwright');
  await page.clock.runFor(2200);assert.equal(await score('#p1'),1);assert.equal(await score('#p2'),1);
  await start();await page.keyboard.press('w');await page.clock.runFor(2200);assert.equal(await score('#p1'),0);
  const box=await page.locator('#court').boundingBox();await page.mouse.move(box.x+584*box.width/800,box.y+RACK_Y*box.height/COURT_HEIGHT);await page.mouse.down();await page.clock.runFor(450);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up();assert.match(await page.locator('#accuracy1').textContent(),/^0\/0/);
- await page.locator('#sound').click();assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');await page.locator('#sound').click();
+ assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'true');await page.locator('#sound').click();assert.equal(await page.locator('#sound').getAttribute('aria-pressed'),'false');await page.locator('#sound').click();
  await page.reload();assert.equal(await score('#best0'),5);await page.clock.runFor(32);await page.screenshot({path:'/tmp/hoops-desktop.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.setViewportSize({width:390,height:844});await page.clock.runFor(32);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/hoops-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
@@ -111,7 +121,7 @@ const {chromium}=require('playwright');
  await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await mobile.clock.runFor(2300);assert.equal(Number(await mobile.locator('#p2').textContent()),1);
  // Render sound events offline: distinct envelopes, non-silent, no clipping.
  const soundCheck=await page.evaluate(async()=>{
-  const{CourtAudio}=await import('./sound.mjs?v=9'),summary={};
+  const{CourtAudio}=await import('./sound.mjs?v=10'),summary={};
   for(const type of ['swish','net','rim','board','bounce','sensor','return']){
    const context=new OfflineAudioContext(2,44100*.6,44100),sound=new CourtAudio(context);sound.enabled=true;await sound.loadSamples();if(['rim','sensor','return','bounce'].includes(type)&&!sound.samples[type]?.length)throw new Error('Missing recording: '+type);sound.play(type,.8,.4);
    const buffer=await context.startRendering(),data=buffer.getChannelData(0);let energy=0,peak=0;for(const value of data){energy+=value*value;peak=Math.max(peak,Math.abs(value));}

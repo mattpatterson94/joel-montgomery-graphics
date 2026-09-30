@@ -1,10 +1,11 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=9';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=9';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=9';
-import {drawSensorArm} from './sensor.mjs?v=9';
-import {drawSideNet} from './side-net.mjs?v=9';
-import {drawNet} from './net.mjs?v=9';
-import {CourtAudio} from './sound.mjs?v=9';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=10';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=10';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=10';
+import {drawSensorArm} from './sensor.mjs?v=10';
+import {drawFabricReturn} from './fabric.mjs?v=10';
+import {drawSideNet} from './side-net.mjs?v=10';
+import {drawNet} from './net.mjs?v=10';
+import {CourtAudio} from './sound.mjs?v=10';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -46,6 +47,8 @@ soundButton.addEventListener('click',()=>{
 function stats(){statsEls.forEach((els,i)=>{els.accuracy.textContent=`${makes[i]}/${attempts[i]} · ${attempts[i]?Math.round(makes[i]/attempts[i]*100):0}%`;els.streak.textContent=String(streaks[i]);els.best.textContent=String(best[i]);});}
 stats();
 const board = document.createElement('canvas'); board.width = 800; board.height = COURT_HEIGHT;
+board.className='court-backdrop';board.setAttribute('aria-hidden','true');
+canvas.before(board);
 const b = board.getContext('2d');
 const resolution=Math.min(devicePixelRatio||1,2);
 canvas.width=board.width=800*resolution;canvas.height=board.height=COURT_HEIGHT*resolution;
@@ -63,9 +66,7 @@ function backboard(){
   const sourceScale=artwork.naturalWidth/1920;
   b.drawImage(artwork,155*sourceScale,213*sourceScale,746*sourceScale,443*sourceScale,36,24,728,432);b.restore();
  }
- const ramp=b.createLinearGradient(0,456,0,940);ramp.addColorStop(0,'#15161a');ramp.addColorStop(1,'#303034');
- path(b,[[47,456],[753,456],[774,933],[26,933]],ramp);
- for(const x of HOOPS){b.strokeStyle='#ffffff32';b.lineWidth=2;b.beginPath();b.moveTo(x-38,530);b.lineTo(x-72,700);b.quadraticCurveTo(x,785,x+72,700);b.lineTo(x+38,530);b.stroke();ellipse(b,x,690,34,11,null,'#ffffff28',2);}
+ drawFabricReturn(b);
  for(const flip of [1,-1]){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
   drawSideNet(b);b.restore();
@@ -74,7 +75,8 @@ function backboard(){
  path(b,[[26,932],[774,932]],null,'#c0c7c7',3);
  for(const x of [26,774]){b.fillStyle='#25292c';b.fillRect(x-9,926,18,15);}
  // A fabric apron hides the supports where they attach to the ball return.
- path(b,[[26,940],[774,940],[756,956],[44,956]],'#111518');
+ b.beginPath();b.moveTo(26,937);b.quadraticCurveTo(400,964,774,937);
+ b.lineTo(756,950);b.quadraticCurveTo(400,973,44,950);b.closePath();b.fillStyle='#0a0d10';b.fill();
  b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],918);b.fillText('P2',HOOPS[1],918);
 }
 artwork.addEventListener('load',backboard);
@@ -207,7 +209,7 @@ function frame(now){
  }
  }
  balls=balls.filter(item=>item.age<5&&!(item.grounded&&item.z===0)&&item.x>-400&&item.x<1200);
- ctx.clearRect(0,0,800,COURT_HEIGHT);ctx.drawImage(board,0,0,800,COURT_HEIGHT);
+ ctx.clearRect(0,0,800,COURT_HEIGHT);
  for(const item of balls){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
  const ordered=[...balls].sort((a,b)=>b.z-a.z);
  // Balls in front of the hoop must cover its rim/net on the way up. Balls

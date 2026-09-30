@@ -8,3 +8,7 @@ nav a { display: flex; align-items: center; justify-content: space-between; gap:
 nav a:hover { background: #edf4ff; color: #2675d4; }
 a:focus-visible { outline: 3px solid #083f81; outline-offset: 3px; }
 @media (max-width: 600px) { body { padding: 16px; } .card { padding: 24px; } h1 { font-size: 23px; } nav a { padding: 18px 16px; } }
+
+/* Cancel the grid gap while collapsed; the link supplies it as it unfolds. */
+.secret-reveal { display: flow-root; margin-top: -12px; }
+.secret-reveal a { margin-top: 12px; }

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
   <link rel="icon" href="assets/favicon.ico">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=secret-reveal">
 </head>
 <body>
   <main class="card">
@@ -20,5 +20,38 @@
       <a href="stretchable/"><span>Stretchable Shape Creator</span><span aria-hidden="true">→</span></a>
     </nav>
   </main>
+  <script>
+    window.setTimeout(() => {
+      const link = document.createElement('a');
+      link.href = '../basketball/';
+      link.innerHTML = '<span>🏀 Secret Basketball Game</span><span aria-hidden="true">→</span>';
+      const reveal = document.createElement('div');
+      reveal.className = 'secret-reveal';
+      reveal.append(link);
+      const animate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (animate) {
+        reveal.style.height = '0px';
+        reveal.style.overflow = 'hidden';
+      }
+      document.querySelector('nav[aria-label="Design utilities"]').append(reveal);
+
+      if (animate) {
+        const height = link.getBoundingClientRect().height + 12;
+        const expand = reveal.animate(
+          [{ height: '0px' }, { height: height + 'px' }],
+          { duration: 600, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' }
+        );
+        link.animate(
+          [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'translateY(0)' }],
+          { duration: 450, delay: 120, easing: 'ease-out', fill: 'backwards' }
+        );
+        expand.onfinish = () => {
+          reveal.style.removeProperty('height');
+          reveal.style.removeProperty('overflow');
+          expand.cancel();
+        };
+      }
+    }, 10000);
+  </script>
 </body>
 </html>

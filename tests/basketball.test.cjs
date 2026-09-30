@@ -5,6 +5,7 @@ const {chromium}=require('playwright');
  const physics=await import('../basketball/physics.mjs');
  const {pointsAt,remaining,makeBall,stepBall,project,RIM_Y,HOOPS,hoopWorldX,chargePower,rackX,COURT_HEIGHT,RACK_Y,GRAVITY,BALL_RADIUS}=physics;
  const {gestureBall,heldPosition,previewArc,releaseSpeed}=await import('../basketball/gestures.mjs');
+ const {sensorAngle}=await import('../basketball/sensor.mjs');
  const {netShape}=await import('../basketball/net.mjs');
  const aimFor=(lane,x)=> (hoopWorldX(lane)-x)/1.65;
  function flight(ball,fps=120){const hits=[];for(let i=0;i<fps*5;i++){const hit=stepBall(ball,1/fps);if(hit!==-1)hits.push(hit);}return{ball,hits};}
@@ -41,6 +42,18 @@ const {chromium}=require('playwright');
  assert.ok(preview.length<15,'guide stops before the landing');
  const arc=gestureBall(g,350);for(let i=0;i<75;i++)stepBall(arc,1/120);assert.ok(project(arc.x,arc.h,arc.z).y<RIM_Y-30);
  const spin=makeBall(0,-75,280,1),original=[...spin.spin];stepBall(spin,.1);assert.ok(spin.spin.filter((v,i)=>v!==original[i]).length>=2,'multi-axis spin');
+ // A controlled bank can drop in; excess power rebounds out towards the player.
+ for(const fps of [30,60,144]){
+  const soft=flight(makeBall(0,aimFor(0,216),305,1),fps);
+  assert.ok(soft.ball.bankHits>0);assert.deepEqual(soft.hits,[0]);
+  const hard=flight(makeBall(0,aimFor(0,216),340,1),fps);
+  assert.ok(hard.ball.bankHits>0);assert.deepEqual(hard.hits,[]);
+ }
+ assert.equal(sensorAngle(null,0),0);
+ assert.ok(sensorAngle({time:0},75)>1,'paddle knocked down');
+ assert.ok(sensorAngle({time:0},300)<0,'spring overshoot');
+ assert.equal(sensorAngle({time:0},1300),0,'paddle settles');
+ assert.equal(sensorAngle({time:0},300,true),0,'reduced motion skips oscillation');
  const bank=flight(makeBall(0,aimFor(0,216),350,1));assert.ok(bank.ball.bankHits>0);
  const rim=flight(makeBall(0,aimFor(0,216)+35,280,1));assert.ok(rim.ball.rimHits>0);assert.ok(rim.ball.grounded);
  const reaction={time:0,ball:{h:100,entry:{swish:true,x:0}}};assert.equal(netShape(reaction,180,0).stretch,0,'net anchors stay fixed');assert.ok(netShape(reaction,180,1).stretch>5);assert.equal(netShape(reaction,2000,1).stretch,0,'net settles');
@@ -98,7 +111,7 @@ const {chromium}=require('playwright');
  await session.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await mobile.clock.runFor(2300);assert.equal(Number(await mobile.locator('#p2').textContent()),1);
  // Render sound events offline: distinct envelopes, non-silent, no clipping.
  const soundCheck=await page.evaluate(async()=>{
-  const{CourtAudio}=await import('./sound.mjs?v=6'),summary={};
+  const{CourtAudio}=await import('./sound.mjs?v=7'),summary={};
   for(const type of ['swish','net','rim','board','bounce','sensor','return']){
    const context=new OfflineAudioContext(2,44100*.6,44100),sound=new CourtAudio(context);sound.enabled=true;await sound.loadSamples();if(['rim','sensor','return','bounce'].includes(type)&&!sound.samples[type]?.length)throw new Error('Missing recording: '+type);sound.play(type,.8,.4);
    const buffer=await context.startRendering(),data=buffer.getChannelData(0);let energy=0,peak=0;for(const value of data){energy+=value*value;peak=Math.max(peak,Math.abs(value));}

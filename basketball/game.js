@@ -1,8 +1,10 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=6';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=6';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=6';
-import {drawNet} from './net.mjs?v=6';
-import {CourtAudio} from './sound.mjs?v=6';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y} from './physics.mjs?v=7';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=7';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=7';
+import {drawSensorArm} from './sensor.mjs?v=7';
+import {drawSideNet} from './side-net.mjs?v=7';
+import {drawNet} from './net.mjs?v=7';
+import {CourtAudio} from './sound.mjs?v=7';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 const timer = document.querySelector('#timer'), scoreEls = [document.querySelector('#p1'),document.querySelector('#p2')];
 const phase = document.querySelector('#phase'), multiplier = document.querySelector('#multiplier');
@@ -15,6 +17,7 @@ const aim=[0,0], rackShots=[0,0], attempts=[0,0], makes=[0,0], streaks=[0,0];
 let best=[0,0];
 try {const saved=JSON.parse(localStorage.getItem('hoops-best')||'[0,0]');if(Array.isArray(saved))best=[0,1].map(i=>Number.isFinite(saved[i])?Math.max(0,saved[i]):0);}catch{}
 const audio=new CourtAudio();
+const armReactions=[null,null];
 const netReactions=[null,null],rackOwners=[{},{}];
 let hover=null;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -47,9 +50,7 @@ function backboard(){
  for(const x of HOOPS){b.strokeStyle='#ffffff32';b.lineWidth=2;b.beginPath();b.moveTo(x-38,530);b.lineTo(x-72,700);b.quadraticCurveTo(x,785,x+72,700);b.lineTo(x+38,530);b.stroke();ellipse(b,x,690,34,11,null,'#ffffff28',2);}
  for(const flip of [1,-1]){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
-  path(b,[[40,166],[47,456],[26,933],[7,904]],'#ffffff04');
-  for(let t=0;t<=1;t+=.09){path(b,[[40+7*t,166+290*t],[7+19*t,904+29*t]],null,'#aaa3ae35');path(b,[[40-33*t,166+738*t],[47-21*t,456+477*t]],null,'#aaa3ae35');}
-  path(b,[[40,166],[7,904],[26,933]],null,'#8e8d93',4);b.restore();
+  drawSideNet(b);b.restore();
  }
  path(b,[[26,935],[774,935]],null,'#aaa7ad',7);
  b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],918);b.fillText('P2',HOOPS[1],918);
@@ -80,7 +81,7 @@ function sync(now){
 }
 start.addEventListener('click',()=>{
  round++;scores=[0,0];[attempts,makes,streaks,rackShots,aim].forEach(list=>list.fill(0));cooldown.fill(-Infinity);
- scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);drags.clear();keys.clear();accumulator=0;
+ scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);armReactions.fill(null);drags.clear();keys.clear();accumulator=0;
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
  audio.unlock();message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
@@ -163,6 +164,7 @@ function frame(now){
   const lane=stepBall(item,1/120);
   for(const event of item.events){
    audio.play(event.type,event.strength,clamp((project(item.x,item.h,item.z).x-400)/420,-.8,.8));
+   if(event.type==='sensor')armReactions[event.lane]={time:now};
    if(event.type==='rim'&&!reducedMotion&&(!netReactions[event.lane]||now-netReactions[event.lane].time>450))netReactions[event.lane]={time:now,rim:true};
   }
   if(lane!==-1){
@@ -190,6 +192,7 @@ function frame(now){
  // arriving at hoop depth sit between its back and front halves on the way down.
  ordered.filter(item=>item.z>1.08).forEach(drawBall);
  HOOPS.forEach((x,lane)=>drawNet(ctx,x,now,false,netReactions[lane]));
+ HOOPS.forEach((x,lane)=>drawSensorArm(ctx,x,now,armReactions[lane],reducedMotion));
  ordered.filter(item=>item.z>=.92&&item.z<=1.08).forEach(drawBall);
  HOOPS.forEach((x,lane)=>drawNet(ctx,x,now,true,netReactions[lane]));
  ordered.filter(item=>item.z<.92).forEach(drawBall);

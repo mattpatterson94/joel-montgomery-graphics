@@ -31,7 +31,9 @@ export function makeBall(lane, aim, power, round, origin=HOOPS[lane]) {
   const flightTime=1.1/SHOT_RATE;
   const nominalVelocity=(RIM_HEIGHT-76+GRAVITY*flightTime*flightTime/2)/flightTime;
   return {lane, x:origin, h:76, z:0, vx:clamp(aim*1.5,-600,600)*SHOT_RATE,
-    vh:nominalVelocity+(clamp(power,130,358)-280)*3.85173*SHOT_RATE, vz:1/flightTime, age:0, scored:false,
+    vh:nominalVelocity+(clamp(power,130,358)-280)*3.85173*SHOT_RATE, // Extra power adds depth speed as well as lift, so hard bank shots rebound
+    // towards the player instead of always meeting the rim on their descent.
+    vz:(1+Math.max(0,power-280)*.0035)/flightTime, age:0, scored:false,
     round, bounces:0, rimHits:0, bankHits:0, grounded:false, landed:false,
     spin:[.45,.2,-.65], omega:[-6,1.2,-aim*.02], events:[]};
 }
@@ -50,7 +52,9 @@ export function stepBall(ball, dt) {
     const onBoard=project(ball.x,ball.h,1.16);
     if(ball.z>boardLimit && ball.vz>0 && ball.h>55 && ball.h<700 && onBoard.x>36 && onBoard.x<764) {
       ball.events.push({type:'board',strength:clamp(Math.abs(ball.vz),.2,1)});
-      ball.z=boardLimit; ball.vz*=-.68; ball.vx*=.85; ball.bankHits++;
+      ball.z=boardLimit; // Harder contacts retain more depth speed; no lateral steering into a hoop.
+      const restitution=clamp(.78+Math.abs(ball.vz)*.1,.8,.93);
+      ball.vz*=-restitution; ball.vx*=.97; ball.bankHits++;
       ball.omega[0]*=-.6;ball.omega[1]*=.8;
     }
     if(!ball.scored && !ball.landed) {
@@ -60,7 +64,7 @@ export function stepBall(ball, dt) {
         for(let lane=0;lane<2;lane++) {
           if(Math.hypot(x-hoopWorldX(lane),(z-1)*700)<RIM_RADIUS-CONTACT_RADIUS) {
             ball.entry={x:x-hoopWorldX(lane),speed:-ball.vh,swish:ball.rimHits===0&&ball.bankHits===0,age:ball.age};
-            ball.scored=true; basket=lane; ball.z=1; ball.vz=0;ball.vh*=.68;
+            ball.scored=true; ball.scoredLane=lane; basket=lane; ball.z=1; ball.vz=0;ball.vh*=.68;
             ball.x=hoopWorldX(lane)+(x-hoopWorldX(lane))*.5; ball.vx*=.15;
             break;
           }
@@ -89,7 +93,7 @@ export function stepBall(ball, dt) {
         }
       }
     }
-    if(ball.scored&&!ball.netExited&&ball.h<RIM_HEIGHT-115){ball.netExited=true;ball.events.push({type:'sensor',strength:.85});}
+    if(ball.scored&&!ball.sensorHit&&ball.h<RIM_HEIGHT-65){ball.sensorHit=true;ball.events.push({type:'sensor',strength:.85,lane:ball.scoredLane});}
     if(ball.h<BALL_RADIUS && ball.vh<0) {
       if(!ball.landed)ball.events.push({type:'return',strength:.7});
       else if(-ball.vh>90)ball.events.push({type:'bounce',strength:clamp(-ball.vh/650,.1,.7)});

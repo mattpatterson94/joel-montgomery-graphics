@@ -1,4 +1,4 @@
-import {RIM_Y,RIM_HEIGHT,clamp} from './physics.mjs?v=6';
+import {RIM_Y,RIM_HEIGHT,clamp} from './physics.mjs?v=7';
 export function netShape(reaction,now,t){
  if(!reaction)return {shift:0,stretch:0,bulge:0,rim:0};
  const elapsed=(now-reaction.time)/1000,decay=Math.exp(-elapsed*4);

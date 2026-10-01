@@ -156,16 +156,21 @@ const {chromium}=require('playwright');
  assert.ok(room.x>=machine.x+machine.width);
  assert.ok(panel.x>machine.x+machine.width,'TV controls sit beside the court');
  assert.ok(machine.width>600,'desktop machine remains close enough to play');
- assert.ok(panel.x+panel.width<=1366,'TV controls remain on screen');
+ const tvScreen=await page.locator('.tv-screen').boundingBox();
+ assert.ok(tvScreen.x+tvScreen.width<=1366,'TV controls remain on screen even when the television crops');
+ assert.ok(panel.x>=machine.x+machine.width*1.05,'TV clears the entire projected side net');
+ assert.ok(Math.abs((machine.x+machine.width/2)/1366-.43)<.01,'machine is anchored near the centre');
+ assert.ok(machine.x>200,'leave the mural visible');
+ assert.ok(Math.abs(panel.width/machine.width-.92)<.01,'TV scales with the machine');
  assert.equal(await page.locator('.panel').evaluate(el=>Boolean(el.closest('[aria-hidden="true"]'))),false,'TV controls are accessible');
  assert.equal(await page.locator('.tv-screen').evaluate(el=>el.scrollWidth>el.clientWidth||el.scrollHeight>el.clientHeight),false,'compact controls fit the screen');
  await page.locator('.instructions>summary').focus();await page.keyboard.press('Enter');
  assert.equal(await page.locator('.instructions').evaluate(el=>el.open),true,'instructions open from the keyboard');
  await page.keyboard.press('Enter');
- for(const [width,height]of [[1024,768],[820,600]]){
+ for(const [width,height]of [[1024,768],[1280,800],[1995,1248]]){
   await page.setViewportSize({width,height});await page.clock.runFor(32);
-  const tv=await page.locator('.panel').boundingBox();
-  assert.ok(tv.x+tv.width<=width,'TV remains visible on a small desktop');
+  const tv=await page.locator('.tv-screen').boundingBox();
+  assert.ok(tv.x+tv.width<=width,'TV controls remain visible');
   assert.equal(await page.locator('.tv-screen').evaluate(el=>el.scrollWidth>el.clientWidth||el.scrollHeight>el.clientHeight),false);
   const court=await page.locator('#court').boundingBox();
   assert.ok(court.y+RACK_Y*court.width/800<height,'balls stay reachable without scrolling');
@@ -179,7 +184,16 @@ const {chromium}=require('playwright');
  // Actual touch gestures, using the same shot mapping and a high-DPI canvas.
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true});
  await mobile.clock.install({time:instant});await mobile.clock.pauseAt(instant);
- await mobile.goto('http://localhost:8765/basketball/');await mobile.locator('#start').tap();
+ await mobile.addInitScript(()=>{
+  const NativeContext=window.AudioContext;
+  window.AudioContext=class extends NativeContext{constructor(...args){super(...args);window.testAudioContext=this;}};
+ });
+ await mobile.goto('http://localhost:8765/basketball/');
+ // A native touch on the court must unlock free-play audio, without Start.
+ await mobile.locator('#court').tap({position:{x:20,y:20}});
+ await mobile.clock.runFor(32);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','touch activates audio in free play');
+ await mobile.locator('#start').tap();
  const rect=await mobile.locator('#court').boundingBox(),session=await mobile.context().newCDPSession(mobile);
  const touch=(x,y)=>({x:rect.x+x*rect.width/800,y:rect.y+y*rect.height/COURT_HEIGHT});
  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(584,RACK_Y)]});

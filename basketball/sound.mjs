@@ -3,9 +3,29 @@ const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['
 const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
 export class CourtAudio {
  constructor(context=null){this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
- unlock(){
+ unlock(fromGesture=false){
   if(!this.enabled)return;
-  try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended'&&typeof this.context.startRendering!=='function')this.context.resume().catch(()=>{});this.loadSamples();}catch{}
+  try{
+   // Request media playback on supporting phones, instead of the default
+   // ambient session that can be silenced by the iPhone's silent switch.
+   if(fromGesture&&globalThis.navigator?.audioSession){
+    try{navigator.audioSession.type='playback';}catch{}
+   }
+   this.context??=new (window.AudioContext||window.webkitAudioContext)();
+   const ctx=this.context;
+   if(typeof ctx.startRendering!=='function'){
+    // Safari can report "interrupted" after an app switch or phone call.
+    if(ctx.state==='suspended'||ctx.state==='interrupted')ctx.resume().catch(()=>{});
+    if(fromGesture&&!this.unlocked){
+     // Start a silent source synchronously within the real touch event. Merely
+     // creating/resuming a context on pointerdown is not sufficient on all iOS versions.
+     const source=ctx.createBufferSource();
+     source.buffer=ctx.createBuffer(1,1,ctx.sampleRate);source.connect(ctx.destination);
+     source.onended=()=>{this.unlocked=true;source.disconnect();};source.start(0);
+    }
+   }
+   this.loadSamples();
+  }catch{}
  }
  async loadSamples(){
   if(!this.context)return;
@@ -32,7 +52,10 @@ export class CourtAudio {
  }
  play(type,strength=.7,pan=0){
   if(!this.enabled)return;
-  this.unlock();if(!this.context)return;this.setup();
+  this.unlock();if(!this.context)return;
+  // Don't accumulate delayed effects while a phone has blocked audio.
+  if(this.context.state!=='running'&&typeof this.context.startRendering!=='function')return;
+  this.setup();
   const ctx=this.context,now=ctx.currentTime;
   if(this.voices>22||now-(this.last.get(type)??-1)<.025)return;
   this.last.set(type,now);this.voices++;

@@ -6,7 +6,7 @@ import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
 import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
 import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
-import {CourtAudio} from './sound.mjs?v=13';
+import {CourtAudio} from './sound.mjs?v=18';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -47,12 +47,15 @@ const aim=[0,0], rackShots=[0,0], attempts=[0,0], makes=[0,0], streaks=[0,0];
 let best=[0,0];
 try {const saved=JSON.parse(localStorage.getItem('hoops-best')||'[0,0]');if(Array.isArray(saved))best=[0,1].map(i=>Number.isFinite(saved[i])?Math.max(0,saved[i]):0);}catch{}
 const audio=new CourtAudio();
+// Native touch events cover mobile browsers that do not grant Web Audio
+// activation to pointerdown, or treat the end of a swipe differently from a tap.
+for(const type of ['touchstart','touchend'])canvas.addEventListener(type,()=>audio.unlock(true),{passive:true});
 const armReactions=[null,null];
 const netReactions=[null,null],rackOwners=[{},{}];
 let hover=null;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 soundButton.addEventListener('click',()=>{
- audio.enabled=!audio.enabled;audio.unlock();soundButton.textContent=audio.enabled?'Sound on':'Sound off';
+ audio.enabled=!audio.enabled;audio.unlock(true);soundButton.textContent=audio.enabled?'Sound on':'Sound off';
  soundButton.setAttribute('aria-pressed',String(audio.enabled));
 });
 function stats(){statsEls.forEach((els,i)=>{els.accuracy.textContent=`${makes[i]}/${attempts[i]} · ${attempts[i]?Math.round(makes[i]/attempts[i]*100):0}%`;els.streak.textContent=String(streaks[i]);els.best.textContent=String(best[i]);});}
@@ -123,7 +126,7 @@ start.addEventListener('click',()=>{
  round++;scores=[0,0];[attempts,makes,streaks,rackShots,aim].forEach(list=>list.fill(0));cooldown.fill(-Infinity);
  scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);armReactions.fill(null);drags.clear();keys.clear();accumulator=0;
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
- audio.unlock();message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
+ audio.unlock(true);message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
 function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*COURT_HEIGHT/r.height};}
 function laneBusy(lane){return [...drags.values()].some(d=>d.lane===lane)||keys.has(lane?'arrowup':'w');}
@@ -131,7 +134,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=coords(e),lane=p.x<400?0:1,origin=rackX(lane,rackShots[lane]);
  if(Math.hypot(p.x-origin,p.y-RACK_Y)>72||laneBusy(lane)||performance.now()-cooldown[lane]<550)return;
- e.preventDefault();audio.unlock();canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
+ e.preventDefault();audio.unlock(true);canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
  const now=performance.now();drags.set(e.pointerId,{start:p,end:p,lane,origin,samples:[{...p,t:now}]});
 });
 function recordPointer(d,e){
@@ -157,7 +160,7 @@ window.addEventListener('keydown',e=>{
  const key=e.key.toLowerCase();if(!controlKeys.includes(key)||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
  e.preventDefault();canvas.classList.remove('pointer-focus');if(e.repeat||keys.has(key))return;
  if(['w','arrowup'].includes(key)){const lane=key==='w'?0:1;if(laneBusy(lane)||performance.now()-cooldown[lane]<550)return;}
- audio.unlock();keys.set(key,performance.now());
+ audio.unlock(true);keys.set(key,performance.now());
 });
 window.addEventListener('keyup',e=>{
  const key=e.key.toLowerCase(),pressed=keys.get(key);if(pressed===undefined)return;

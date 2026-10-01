@@ -185,27 +185,28 @@ const {chromium}=require('playwright');
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true,userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
  await mobile.clock.install({time:instant});await mobile.clock.pauseAt(instant);
  await mobile.addInitScript(()=>{
-  const NativeAudio=window.Audio;
-  window.Audio=function(src){const element=new NativeAudio(src);window.testMediaAudio=element;return element;};
+  window.Audio=function(src){throw new Error('The removed media-track workaround must not run');};
   const NativeContext=window.AudioContext;
   window.AudioContext=class extends NativeContext{constructor(...args){super(...args);window.testAudioContext=this;}};
  });
  await mobile.goto('http://localhost:8765/basketball/');
- // A native touch on the court must unlock free-play audio, without Start.
- await mobile.locator('#court').tap({position:{x:20,y:20}});
+ // Activation must happen on first contact, before the finger lifts or swipes.
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Context: not created/);
+ const firstTouch=await mobile.context().newCDPSession(mobile);
+ const firstCourt=await mobile.locator('#court').boundingBox();
+ await firstTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:firstCourt.x+20,y:firstCourt.y+20}]});
  await mobile.clock.runFor(32);
- assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','touch activates audio in free play');
- const media=await mobile.evaluate(async()=>{
-  const audio=window.testMediaAudio;
-  if(audio.readyState<2)await new Promise(resolve=>audio.addEventListener('loadeddata',resolve,{once:true}));
-  return{paused:audio.paused,loop:audio.loop,muted:audio.muted,duration:audio.duration};
- });
- assert.deepEqual(media,{paused:false,loop:true,muted:false,duration:1},'iPhone channel has a playing silent media track');
- await mobile.locator('#sound').tap();assert.equal(await mobile.evaluate(()=>window.testMediaAudio.paused),true,'mute stops media track');
- await mobile.locator('#test-sound').tap();
- await mobile.clock.runFor(100);
- assert.match(await mobile.locator('#message').textContent(),/^Playing a test bounce/);
- assert.equal(await mobile.evaluate(()=>window.testMediaAudio.paused),false,'sound check reactivates the media channel');
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','audio runs before touchend');
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Gesture: (touchstart|pointerdown)/);
+ await firstTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await mobile.locator('#sound').tap();
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Audio: off/);
+ await mobile.locator('#test-sound').tap();await mobile.clock.runFor(100);
+ assert.match(await mobile.locator('#message').textContent(),/^Test bounce scheduled/);
+ const debug=await mobile.locator('#audio-debug').textContent();
+ assert.match(debug,/Context: running/);assert.match(debug,/Files: 7\/7 decoded · 0 failed/);
+ assert.match(debug,/Effects: 1 requested · 1 scheduled/);
+ await mobile.screenshot({path:'/tmp/hoops-audio-debug.png',fullPage:true});
  await mobile.locator('#start').tap();
  const rect=await mobile.locator('#court').boundingBox(),session=await mobile.context().newCDPSession(mobile);
  const touch=(x,y)=>({x:rect.x+x*rect.width/800,y:rect.y+y*rect.height/COURT_HEIGHT});

@@ -6,7 +6,7 @@ import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
 import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
 import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
-import {CourtAudio} from './sound.mjs?v=19';
+import {CourtAudio} from './sound.mjs?v=20';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -47,9 +47,14 @@ const aim=[0,0], rackShots=[0,0], attempts=[0,0], makes=[0,0], streaks=[0,0];
 let best=[0,0];
 try {const saved=JSON.parse(localStorage.getItem('hoops-best')||'[0,0]');if(Array.isArray(saved))best=[0,1].map(i=>Number.isFinite(saved[i])?Math.max(0,saved[i]):0);}catch{}
 const audio=new CourtAudio();
-// Native touch events cover mobile browsers that do not grant Web Audio
-// activation to pointerdown, or treat the end of a swipe differently from a tap.
-for(const type of ['touchstart','touchend'])canvas.addEventListener(type,()=>audio.unlock(true),{passive:true});
+// Capture the first contact anywhere in the game before child handlers, even
+// when the user misses a ball. Retry on later contacts if activation is blocked.
+for(const type of ['pointerdown','touchstart'])document.querySelector('.game-layout').addEventListener(type,event=>audio.unlock(true,event.type),{capture:true,passive:true});
+const audioDebug=document.querySelector('#audio-debug');
+const updateAudioDebug=()=>{audioDebug.textContent=audio.diagnostics();};
+audio.onchange=updateAudioDebug;updateAudioDebug();
+// Keep the context clock visible too: "running" with a frozen clock is useful evidence.
+setInterval(()=>{if(!document.hidden)updateAudioDebug();},500);
 const armReactions=[null,null];
 const netReactions=[null,null],rackOwners=[{},{}];
 let hover=null;
@@ -60,7 +65,7 @@ soundButton.addEventListener('click',()=>{
 });
 document.querySelector('#test-sound').addEventListener('click',async()=>{
  const result=audio.test();soundButton.textContent='Sound on';soundButton.setAttribute('aria-pressed','true');
- try{await result;message.textContent='Playing a test bounce. If silent, check your media volume and audio output.';}
+ try{await result;message.textContent='Test bounce scheduled. If silent, send the Audio check details below.';}
  catch(error){message.textContent=error.message;}
 });
 function stats(){statsEls.forEach((els,i)=>{els.accuracy.textContent=`${makes[i]}/${attempts[i]} · ${attempts[i]?Math.round(makes[i]/attempts[i]*100):0}%`;els.streak.textContent=String(streaks[i]);els.best.textContent=String(best[i]);});}
@@ -131,7 +136,7 @@ start.addEventListener('click',()=>{
  round++;scores=[0,0];[attempts,makes,streaks,rackShots,aim].forEach(list=>list.fill(0));cooldown.fill(-Infinity);
  scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);armReactions.fill(null);drags.clear();keys.clear();accumulator=0;
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
- audio.unlock(true);message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
+ audio.unlock(true,'start button');message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
 function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*COURT_HEIGHT/r.height};}
 function laneBusy(lane){return [...drags.values()].some(d=>d.lane===lane)||keys.has(lane?'arrowup':'w');}
@@ -139,7 +144,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=coords(e),lane=p.x<400?0:1,origin=rackX(lane,rackShots[lane]);
  if(Math.hypot(p.x-origin,p.y-RACK_Y)>72||laneBusy(lane)||performance.now()-cooldown[lane]<550)return;
- e.preventDefault();audio.unlock(true);canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
+ e.preventDefault();canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
  const now=performance.now();drags.set(e.pointerId,{start:p,end:p,lane,origin,samples:[{...p,t:now}]});
 });
 function recordPointer(d,e){
@@ -165,7 +170,7 @@ window.addEventListener('keydown',e=>{
  const key=e.key.toLowerCase();if(!controlKeys.includes(key)||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
  e.preventDefault();canvas.classList.remove('pointer-focus');if(e.repeat||keys.has(key))return;
  if(['w','arrowup'].includes(key)){const lane=key==='w'?0:1;if(laneBusy(lane)||performance.now()-cooldown[lane]<550)return;}
- audio.unlock(true);keys.set(key,performance.now());
+ audio.unlock(true,'keydown');keys.set(key,performance.now());
 });
 window.addEventListener('keyup',e=>{
  const key=e.key.toLowerCase(),pressed=keys.get(key);if(pressed===undefined)return;

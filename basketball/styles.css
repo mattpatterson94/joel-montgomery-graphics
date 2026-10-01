@@ -95,4 +95,8 @@ main{overflow-x:clip}
 
 .sound-controls{display:flex;gap:8px;align-items:center}
 #test-sound{display:none}
-@media(pointer:coarse){#test-sound{display:inline-block}}
+@media(pointer:coarse),(max-width:1000px){#test-sound{display:inline-block}}
+
+/* Temporary mobile audio diagnostics; desktop scene geometry is unchanged. */
+#audio-debug{display:none;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.65 monospace;color:#c3d5d8;background:#0d1519;border:1px solid #34494e;border-radius:6px;padding:10px;margin:12px 0}
+@media(pointer:coarse),(max-width:1000px){#audio-debug{display:block}}

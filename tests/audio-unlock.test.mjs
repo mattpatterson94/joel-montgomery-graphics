@@ -11,14 +11,14 @@ const context={state:'suspended',currentTime:0,sampleRate:48000,destination:{},l
  createBufferSource(){created++;return{connect(){},start(){started++;this.onended();},disconnect(){disconnected++;}}}
 };
 const audio=new CourtAudio(context);audio.loadSamples=()=>{};
-audio.unlock(true,'touchstart');
+audio.unlock(true,'touchend');
 assert.equal(requestedType,'playback');assert.equal(resumed,1);
 assert.equal(started,1,'priming starts synchronously before the gesture handler returns');
 assert.equal(disconnected,1);assert.match(audio.diagnostics(),/Audio: unlocked/);
-assert.match(audio.diagnostics(),/Gesture: touchstart/);
+assert.match(audio.diagnostics(),/Gesture: touchend/);
 audio.unlock(true,'pointerdown');assert.equal(created,1,'no repeat priming once unlocked');
 audio.pause();assert.match(audio.diagnostics(),/Context: suspended/);
-audio.unlock(true,'touchstart');assert.equal(resumed,2,'next contact resumes after backgrounding');
+audio.unlock(true,'touchend');assert.equal(resumed,2,'next contact resumes after backgrounding');
 context.state='interrupted';context.listeners.statechange();audio.unlock(true);assert.equal(resumed,3);
 audio.setEnabled(false);context.state='suspended';audio.unlock(true);assert.equal(resumed,3);
 assert.match(audio.diagnostics(),/Audio: off/);
@@ -26,7 +26,7 @@ assert.match(audio.diagnostics(),/Audio: off/);
 // A denied resume remains visibly locked, with the browser's error preserved.
 audio.enabled=true;audio.unlocked=false;
 context.resume=()=>Promise.reject(Object.assign(Error('User activation required'),{name:'NotAllowedError'}));
-audio.unlock(true,'touchstart');await audio.resumePromise;
+audio.unlock(true,'touchend');await audio.resumePromise;
 assert.match(audio.diagnostics(),/resume: NotAllowedError.*User activation required/);
 audio.play('rim');assert.equal(audio.voices,0);
 assert.match(audio.diagnostics(),/Effects: 1 requested · 0 scheduled · 0 finished/);

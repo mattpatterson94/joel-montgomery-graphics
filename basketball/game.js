@@ -6,7 +6,7 @@ import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
 import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
 import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
-import {CourtAudio} from './sound.mjs?v=20';
+import {CourtAudio} from './sound.mjs?v=21';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -47,9 +47,16 @@ const aim=[0,0], rackShots=[0,0], attempts=[0,0], makes=[0,0], streaks=[0,0];
 let best=[0,0];
 try {const saved=JSON.parse(localStorage.getItem('hoops-best')||'[0,0]');if(Array.isArray(saved))best=[0,1].map(i=>Number.isFinite(saved[i])?Math.max(0,saved[i]):0);}catch{}
 const audio=new CourtAudio();
-// Capture the first contact anywhere in the game before child handlers, even
-// when the user misses a ball. Retry on later contacts if activation is blocked.
-for(const type of ['pointerdown','touchstart'])document.querySelector('.game-layout').addEventListener(type,event=>audio.unlock(true,event.type),{capture:true,passive:true});
+// Touch activation is granted on completion, not touchstart. Use the same
+// synchronous unlock as the working Test sound button, including after a swipe.
+// Pointer capture keeps a ball's pointerup in this game even outside the canvas.
+const gameArea=document.querySelector('.game-layout');
+for(const type of ['pointerdown','pointerup','touchend','click'])gameArea.addEventListener(type,event=>{
+ if(!event.isTrusted)return;
+ if(type==='pointerdown'&&event.pointerType!=='mouse')return;
+ if(type==='pointerup'&&event.pointerType==='mouse')return;
+ audio.unlock(true,type);
+},{capture:true,passive:true});
 const audioDebug=document.querySelector('#audio-debug');
 const updateAudioDebug=()=>{audioDebug.textContent=audio.diagnostics();};
 audio.onchange=updateAudioDebug;updateAudioDebug();

@@ -186,21 +186,41 @@ const {chromium}=require('playwright');
  await mobile.clock.install({time:instant});await mobile.clock.pauseAt(instant);
  await mobile.addInitScript(()=>{
   window.Audio=function(src){throw new Error('The removed media-track workaround must not run');};
+  // Reproduce the phone report: down/start cannot unlock, completed touch/click can.
   const NativeContext=window.AudioContext;
-  window.AudioContext=class extends NativeContext{constructor(...args){super(...args);window.testAudioContext=this;}};
+  window.AudioContext=class extends NativeContext{
+   constructor(...args){super(...args);this.authorized=false;super.suspend();window.testAudioContext=this;}
+   get state(){return this.authorized?super.state:'suspended';}
+   resume(){
+    const event=window.event;
+    const eligible=event&&(['pointerup','touchend','click'].includes(event.type)||(event.type==='pointerdown'&&event.pointerType==='mouse'));
+    if(!eligible)return new Promise(()=>{});
+    this.authorized=true;return super.resume();
+   }
+  };
  });
  await mobile.goto('http://localhost:8765/basketball/');
- // Activation must happen on first contact, before the finger lifts or swipes.
+ // A first swipe must activate audio on release without Test sound or Start.
  assert.match(await mobile.locator('#audio-debug').textContent(),/Context: not created/);
  const firstTouch=await mobile.context().newCDPSession(mobile);
  const firstCourt=await mobile.locator('#court').boundingBox();
- await firstTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:firstCourt.x+20,y:firstCourt.y+20}]});
+ const firstAt=(x,y)=>({x:firstCourt.x+x*firstCourt.width/800,y:firstCourt.y+y*firstCourt.height/COURT_HEIGHT});
+ await firstTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[firstAt(216,RACK_Y)]});
  await mobile.clock.runFor(32);
- assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','audio runs before touchend');
- assert.match(await mobile.locator('#audio-debug').textContent(),/Gesture: (touchstart|pointerdown)/);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state||'not created'),'not created','touchstart no longer assumes activation');
+ for(let i=1;i<=14;i++){await mobile.clock.runFor(25);await firstTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[firstAt(216,RACK_Y-240*i/14)]});}
  await firstTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await mobile.clock.runFor(2300);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','first swipe unlocks without Test sound');
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Files: 7\/7 decoded · 0 failed/);
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Effects: \d+ requested · [1-9]\d* scheduled/,'normal shot effects play');
+ // A tap anywhere in the game is also sufficient after a fresh load.
+ await mobile.reload();await mobile.locator('#court').tap({position:{x:20,y:20}});await mobile.clock.runFor(32);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','ordinary tap unlocks after reload');
  await mobile.locator('#sound').tap();
  assert.match(await mobile.locator('#audio-debug').textContent(),/Audio: off/);
+ await mobile.locator('#court').tap({position:{x:20,y:20}});
+ assert.equal(await mobile.locator('#sound').getAttribute('aria-pressed'),'false','automatic activation respects mute');
  await mobile.locator('#test-sound').tap();await mobile.clock.runFor(100);
  assert.match(await mobile.locator('#message').textContent(),/^Test bounce scheduled/);
  const debug=await mobile.locator('#audio-debug').textContent();

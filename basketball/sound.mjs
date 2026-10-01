@@ -16,7 +16,7 @@ export class CourtAudio {
   const failed=[...this.files.values()].filter(state=>state==='failed').length;
   const state=this.context?.state||'not created';
   const status=!this.enabled?'off':state==='running'&&this.unlocked?'unlocked':this.priming?'starting':'locked';
-  return `Audio check · v20\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
+  return `Audio check · v21\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
  }
  unlock(fromGesture=false,gesture='interaction'){
   if(!this.enabled)return;
@@ -35,8 +35,8 @@ export class CourtAudio {
      ctx.addEventListener('statechange',()=>{if(ctx.state!=='running')this.unlocked=false;this.notify();});
     }
     if(fromGesture){
-     // Both calls happen synchronously in pointerdown/touchstart, before any
-     // sample fetch, await, animation frame or end-of-drag handler.
+     // Both calls happen synchronously in a browser activation event (mouse
+     // down, touch completion or button click), before any await or fetch.
      if(ctx.state!=='running'){
       this.resumePromise=ctx.resume().then(()=>this.notify(),error=>{this.error('resume',error);});
      }

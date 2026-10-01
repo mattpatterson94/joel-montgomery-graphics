@@ -61,7 +61,7 @@ const fs = require('node:fs');
     const tags=root=>[...root.querySelectorAll('*')].map(el=>el.localName).join(',');
     const pa=[...a.querySelectorAll('polygon')],pb=[...b.querySelectorAll('polygon')];
     const geometry=pa.every((poly,i)=>[...poly.points].every((p,j)=>Math.abs(p.x-pb[i].points[j].x)<0.00001&&Math.abs(p.y-pb[i].points[j].y)<0.00001));
-    const filter=root=>new XMLSerializer().serializeToString(root.querySelector('filter'));
+    const filter=root=>{const copy=root.querySelector('filter').cloneNode(true);copy.setAttribute('id','interior');return new XMLSerializer().serializeToString(copy);};
     return {tags:tags(a)===tags(b),geometry,filter:filter(a)===filter(b)};
   },{working,output:result.output});
   assert.deepEqual(parity,{tags:true,geometry:true,filter:true});

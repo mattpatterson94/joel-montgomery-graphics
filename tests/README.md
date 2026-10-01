@@ -6,7 +6,7 @@ The site is static and has no build step or production dependencies. Open
 For browser regression tests, install Playwright in a temporary directory:
 
 ```sh
-npm install --prefix /tmp/stretchrepeat-tests playwright
+npm install --prefix /tmp/stretchrepeat-tests playwright pngjs
 /tmp/stretchrepeat-tests/node_modules/.bin/playwright install chromium
 python3 -m http.server 8765
 ```
@@ -64,6 +64,30 @@ baked polygon/path geometry, gradients, patterns, filters, clips, masks,
 transformed primitives, nested viewports and uses, pixel parity with source
 artwork, and original-unit advanced settings including apply/reset.
 
+
+## Stretch & Repeat resource IDs
+
+Each conversion generates a random 128-bit namespace for the interior filter and
+source artwork IDs (patterns, gradients, clips, masks, paths and groups). Local
+`url(...)`, `href`, `xlink:href` and accessibility references are updated together.
+The namespace stays stable while changing settings, previewing and downloading;
+converting the same source again generates a new namespace.
+
+Keep the tested `PATTERN`, `REPEAT_X`, `L` and `R` import markers. The supplied
+app DOM shows the repeat handler renaming PATTERN when expanding it, whereas
+filter IDs remain untouched. Changing the pattern naming convention previously
+broke repetition, so this fix targets the confirmed shared-filter collision
+without changing those app markers.
+
+Run `node tests/stretchrepeat-ids.test.cjs` using the same server/browser setup
+and with `pngjs` installed alongside Playwright. It checks references, namespaces,
+source patterns also named PATTERN, stable rebuilds, and two inline elements with
+different cutoffs. A control with the old shared filter ID reproduces the wrong
+cutoff; unique filter IDs preserve each element's intended bounds.
+
+This prevents collisions between separately converted files. Reusing a single
+export still reuses its IDs; the host app must namespace resources per placed
+instance to guarantee isolation for copies of the same asset.
 
 ## Shape Mask selection
 

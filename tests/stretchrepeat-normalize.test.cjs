@@ -14,7 +14,7 @@ const path = require('node:path');
       const data = await StretchRepeat.inspect(source);
       const text = StretchRepeat.build(data,data.defaults);
       const output = new DOMParser().parseFromString(text,'image/svg+xml');
-      const attr = (selector,name) => output.querySelector(selector).getAttribute(name);
+      const attr = (selector,name) => output.querySelector(selector.replace(/#([\w-]+)/g,(_,id)=>'#'+(data.resourceIDs.get(id)||id))).getAttribute(name);
       // Reassemble the original artwork from the normalized model, before repeating.
       const original = new DOMParser().parseFromString(source,'image/svg+xml').documentElement;
       const normalized = document.createElementNS('http://www.w3.org/2000/svg','svg');

@@ -45,6 +45,19 @@
     const urls = [...value.matchAll(/url\s*\(([^)]*)\)/gi)];
     return urls.every(match => /^['"]?#[\w:.-]+['"]?$/.test(match[1].trim()));
   }
+  function namespaceArtwork(root, prefix, sections) {
+    const elements = [root, ...root.querySelectorAll('*')];
+    const ids = new Map();
+    // The app consumes the top-level section names; all other source IDs are private.
+    for (const el of elements) if (el.id && !sections.includes(el)) ids.set(el.id, `${prefix}-art-${ids.size}`);
+    for (const el of elements) for (const attr of [...el.attributes]) {
+      if (attr.localName === 'id' && ids.has(attr.value)) attr.value = ids.get(attr.value);
+      else if (attr.localName === 'href' && attr.value.trim().startsWith('#') && ids.has(attr.value.trim().slice(1))) attr.value = `#${ids.get(attr.value.trim().slice(1))}`;
+      else if (['aria-labelledby','aria-describedby'].includes(attr.localName)) attr.value = attr.value.split(/\s+/).map(id => ids.get(id) || id).join(' ');
+      else attr.value = attr.value.replace(/url\(\s*["']?#([\w:.-]+)["']?\s*\)/gi, (original, id) => ids.has(id) ? `url(#${ids.get(id)})` : original);
+    }
+    return ids;
+  }
   async function inspect(source) {
     const root = parse(source);
     const vb = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
@@ -113,6 +126,9 @@
         parts[id] = {group, matrix};
       }
 
+      // One namespace per conversion, stable across preview/settings/download rebuilds.
+      const resourcePrefix = 'sr-' + [...crypto.getRandomValues(new Uint32Array(4))].map(n => n.toString(16).padStart(8,'0')).join('');
+      const resourceIDs = namespaceArtwork(live, resourcePrefix, Object.values(parts).map(part => part.group));
       const definitions = [...live.children].filter(el => el.localName === 'defs').map(el => el.cloneNode(true));
       const cloned = {};
       for (const id of ['L','C','R']) {
@@ -125,7 +141,7 @@
       if (bounds.C.width <= 1) throw new Error('The detected centre width must be greater than 1 SVG unit to subtract 1 from the repeat tile width.');
       const left = bounds.C.x, right = vb[2] - bounds.C.x - bounds.C.width;
       if (left < -0.01 || right < -0.01) throw new Error('The centre must fit horizontally within the SVG artboard.');
-      return {width:vb[2], height:vb[3], originalSize, scale, definitions, parts:cloned, bounds,
+      return {width:vb[2], height:vb[3], originalSize, scale, resourcePrefix, resourceIDs, definitions, parts:cloned, bounds,
         defaults:{tile:bounds.C.width - 1, start:bounds.C.x, left:Math.max(0,left), right:Math.max(0,right)}};
     } finally { frame.remove(); }
   }
@@ -181,7 +197,9 @@
     const ids = new Set([...defs.querySelectorAll('[id]')].map(el => el.id));
     for (const part of Object.values(data.parts)) for (const el of part.querySelectorAll('[id]')) ids.add(el.id);
     const unique = base => {let id=base; while(ids.has(id)) id+='x'; ids.add(id); return id;};
-    const patternID=unique('PATTERN'), filterID=unique('interior');
+    // Keep the tested import marker. The app renames PATTERN when expanding it;
+    // filters and artwork definitions must already have their own unique IDs.
+    const patternID=unique('PATTERN'), filterID=unique(`interior-${data.resourcePrefix}`);
     const pattern = svgNode(simulate ? 'g' : 'pattern', {id:patternID, patternUnits:'userSpaceOnUse',x:0,y:0,width:number(config.tile),height:number(data.height)});
     pattern.append(prepareArtwork(data.parts.C, -config.start)); defs.prepend(pattern);
     const filter = svgNode('filter',{id:filterID,filterUnits:'userSpaceOnUse',primitiveUnits:'userSpaceOnUse',x:0,y:0,width:'100%',height:number(data.height),'color-interpolation-filters':'sRGB'});

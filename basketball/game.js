@@ -1,26 +1,29 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y, carpetHeight} from './physics.mjs?v=11';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=11';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=11';
-import {drawSensorArm} from './sensor.mjs?v=11';
-import {drawFabricReturn} from './fabric.mjs?v=11';
-import {drawSideNet} from './side-net.mjs?v=11';
-import {drawNet} from './net.mjs?v=11';
-import {CourtAudio} from './sound.mjs?v=11';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y, carpetHeight} from './physics.mjs?v=13';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=13';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=13';
+import {drawSensorArm} from './sensor.mjs?v=13';
+import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
+import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
+import {drawSideNet} from './side-net.mjs?v=16';
+import {drawNet} from './net.mjs?v=13';
+import {CourtAudio} from './sound.mjs?v=21';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
 const office=document.querySelector('.office');
+// Share room coordinates with the accessible TV controls in <main>.
+const roomStyle=document.body.style;
 function alignOffice(){
  const rect=canvas.getBoundingClientRect(),top=rect.top+window.scrollY;
- office.style.setProperty('--court-left',`${rect.left}px`);
- office.style.setProperty('--court-right',`${rect.right}px`);
- office.style.setProperty('--court-top',`${top}px`);
- office.style.setProperty('--court-width',`${rect.width}px`);
+ roomStyle.setProperty('--court-left',`${rect.left}px`);
+ roomStyle.setProperty('--court-right',`${rect.right}px`);
+ roomStyle.setProperty('--court-top',`${top}px`);
+ roomStyle.setProperty('--court-width',`${rect.width}px`);
  const cornerX=Math.max(0,rect.left-12),cornerY=top+rect.width*1.28;
  const nearY=cornerY+cornerX*.36;
- office.style.setProperty('--corner-x',`${cornerX}px`);
- office.style.setProperty('--corner-y',`${cornerY}px`);
- office.style.setProperty('--near-floor-y',`${nearY}px`);
+ roomStyle.setProperty('--corner-x',`${cornerX}px`);
+ roomStyle.setProperty('--corner-y',`${cornerY}px`);
+ roomStyle.setProperty('--near-floor-y',`${nearY}px`);
  office.querySelector('.floor-edge path').setAttribute('d',`M0 ${nearY}L${cornerX} ${cornerY}H${document.documentElement.clientWidth}`);
 }
 new ResizeObserver(alignOffice).observe(canvas);
@@ -44,13 +47,33 @@ const aim=[0,0], rackShots=[0,0], attempts=[0,0], makes=[0,0], streaks=[0,0];
 let best=[0,0];
 try {const saved=JSON.parse(localStorage.getItem('hoops-best')||'[0,0]');if(Array.isArray(saved))best=[0,1].map(i=>Number.isFinite(saved[i])?Math.max(0,saved[i]):0);}catch{}
 const audio=new CourtAudio();
+// Touch activation is granted on completion, not touchstart. Use the same
+// synchronous unlock as the working Test sound button, including after a swipe.
+// Pointer capture keeps a ball's pointerup in this game even outside the canvas.
+const gameArea=document.querySelector('.game-layout');
+for(const type of ['pointerdown','pointerup','touchend','click'])gameArea.addEventListener(type,event=>{
+ if(!event.isTrusted)return;
+ if(type==='pointerdown'&&event.pointerType!=='mouse')return;
+ if(type==='pointerup'&&event.pointerType==='mouse')return;
+ audio.unlock(true,type);
+},{capture:true,passive:true});
+const audioDebug=document.querySelector('#audio-debug');
+const updateAudioDebug=()=>{audioDebug.textContent=audio.diagnostics();};
+audio.onchange=updateAudioDebug;updateAudioDebug();
+// Keep the context clock visible too: "running" with a frozen clock is useful evidence.
+setInterval(()=>{if(!document.hidden)updateAudioDebug();},500);
 const armReactions=[null,null];
 const netReactions=[null,null],rackOwners=[{},{}];
 let hover=null;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 soundButton.addEventListener('click',()=>{
- audio.enabled=!audio.enabled;audio.unlock();soundButton.textContent=audio.enabled?'Sound on':'Sound off';
+ audio.setEnabled(!audio.enabled);soundButton.textContent=audio.enabled?'Sound on':'Sound off';
  soundButton.setAttribute('aria-pressed',String(audio.enabled));
+});
+document.querySelector('#test-sound').addEventListener('click',async()=>{
+ const result=audio.test();soundButton.textContent='Sound on';soundButton.setAttribute('aria-pressed','true');
+ try{await result;message.textContent='Test bounce scheduled. If silent, send the Audio check details below.';}
+ catch(error){message.textContent=error.message;}
 });
 function stats(){statsEls.forEach((els,i)=>{els.accuracy.textContent=`${makes[i]}/${attempts[i]} · ${attempts[i]?Math.round(makes[i]/attempts[i]*100):0}%`;els.streak.textContent=String(streaks[i]);els.best.textContent=String(best[i]);});}
 stats();
@@ -59,35 +82,40 @@ board.className='court-backdrop';board.setAttribute('aria-hidden','true');
 canvas.before(board);
 const b = board.getContext('2d');
 const resolution=Math.min(devicePixelRatio||1,2);
-canvas.width=board.width=800*resolution;canvas.height=board.height=COURT_HEIGHT*resolution;
-ctx.scale(resolution,resolution);b.scale(resolution,resolution);
+canvas.width=800*resolution;board.width=880*resolution;canvas.height=board.height=COURT_HEIGHT*resolution;
+ctx.scale(resolution,resolution);b.scale(resolution,resolution);b.translate(40,0);
 function path(c, coords, fill, stroke, width=1) {c.beginPath();coords.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(fill){c.closePath();c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 function ellipse(c,x,y,rx,ry,fill,stroke,width=1){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 const artwork = new Image();
 artwork.src = new URL('./backboard-reference.png', import.meta.url).href;
-function backboard(){
- b.clearRect(0,0,800,COURT_HEIGHT);
+function backboard(now=performance.now()){
+ b.clearRect(-40,0,880,COURT_HEIGHT);
  // Display the actual left-hand artwork from the supplied reference at its native
  // aspect ratio. Clip the white corners, without redrawing any of the print design.
  if(artwork.complete && artwork.naturalWidth){
   b.save();b.beginPath();b.roundRect(36,24,728,432,[65,65,0,0]);b.clip();
   const sourceScale=artwork.naturalWidth/1920;
   b.drawImage(artwork,155*sourceScale,213*sourceScale,746*sourceScale,443*sourceScale,36,24,728,432);b.restore();
+  // Cover the pale antialiased crop edge around the black header.
+  b.beginPath();b.roundRect(36,24,728,432,[65,65,0,0]);b.strokeStyle='#101213';b.lineWidth=2.5;b.stroke();
  }
- drawFabricReturn(b);
+ drawFabricReturn(b,now);
  for(const flip of [1,-1]){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
   drawSideNet(b);b.restore();
  }
- path(b,[[26,935],[774,935]],null,'#535b5d',10);
- path(b,[[26,932],[774,932]],null,'#c0c7c7',3);
- for(const x of [26,774]){b.fillStyle='#25292c';b.fillRect(x-9,926,18,15);}
- // A fabric apron hides the supports where they attach to the ball return.
- b.beginPath();b.moveTo(26,937);b.quadraticCurveTo(400,964,774,937);
- b.lineTo(756,950);b.quadraticCurveTo(400,973,44,950);b.closePath();b.fillStyle='#0a0d10';b.fill();
- b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],918);b.fillText('P2',HOOPS[1],918);
+ // The front catcher is a deep fabric sling between two rails.
+ b.beginPath();b.moveTo(frontLeft,876);b.quadraticCurveTo(400,938,frontRight,876);
+ b.lineTo(frontRight,943);b.quadraticCurveTo(400,965,frontLeft,943);b.closePath();
+ const pocket=b.createLinearGradient(0,875,0,960);pocket.addColorStop(0,'#373b39');pocket.addColorStop(.5,'#111615');pocket.addColorStop(1,'#070b0b');b.fillStyle=pocket;b.fill();
+ for(const y of [881,945]){
+  b.beginPath();b.moveTo(frontLeft,y+12);b.quadraticCurveTo(frontLeft-7,y,frontLeft+14,y);b.lineTo(frontRight-14,y);b.quadraticCurveTo(frontRight+7,y,frontRight,y+12);
+  b.strokeStyle='#4b5352';b.lineWidth=10;b.stroke();b.strokeStyle='#aeb9b7';b.lineWidth=3;b.stroke();
+ }
+ for(const x of [frontLeft,frontRight]){path(b,[[x,891],[x,944]],null,'#87928e',7);}
+ b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],929);b.fillText('P2',HOOPS[1],929);
 }
-artwork.addEventListener('load',backboard);
+artwork.addEventListener('load',()=>backboard());
 artwork.addEventListener('error',()=>{message.textContent='Backboard image could not load. Reload the page to try again.';});
 backboard();
 function shoot(item){
@@ -115,7 +143,7 @@ start.addEventListener('click',()=>{
  round++;scores=[0,0];[attempts,makes,streaks,rackShots,aim].forEach(list=>list.fill(0));cooldown.fill(-Infinity);
  scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);armReactions.fill(null);drags.clear();keys.clear();accumulator=0;
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
- audio.unlock();message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
+ audio.unlock(true,'start button');message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
 function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*COURT_HEIGHT/r.height};}
 function laneBusy(lane){return [...drags.values()].some(d=>d.lane===lane)||keys.has(lane?'arrowup':'w');}
@@ -123,7 +151,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  const p=coords(e),lane=p.x<400?0:1,origin=rackX(lane,rackShots[lane]);
  if(Math.hypot(p.x-origin,p.y-RACK_Y)>72||laneBusy(lane)||performance.now()-cooldown[lane]<550)return;
- e.preventDefault();audio.unlock();canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
+ e.preventDefault();canvas.classList.add('pointer-focus');canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
  const now=performance.now();drags.set(e.pointerId,{start:p,end:p,lane,origin,samples:[{...p,t:now}]});
 });
 function recordPointer(d,e){
@@ -149,7 +177,7 @@ window.addEventListener('keydown',e=>{
  const key=e.key.toLowerCase();if(!controlKeys.includes(key)||e.ctrlKey||e.metaKey||e.altKey||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
  e.preventDefault();canvas.classList.remove('pointer-focus');if(e.repeat||keys.has(key))return;
  if(['w','arrowup'].includes(key)){const lane=key==='w'?0:1;if(laneBusy(lane)||performance.now()-cooldown[lane]<550)return;}
- audio.unlock();keys.set(key,performance.now());
+ audio.unlock(true,'keydown');keys.set(key,performance.now());
 });
 window.addEventListener('keyup',e=>{
  const key=e.key.toLowerCase(),pressed=keys.get(key);if(pressed===undefined)return;
@@ -157,8 +185,9 @@ window.addEventListener('keyup',e=>{
  keys.delete(key);
 });
 window.addEventListener('keydown',e=>{if(e.key==='Tab')canvas.classList.remove('pointer-focus');});
-window.addEventListener('blur',()=>{keys.clear();drags.clear();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();drags.clear();balls=[];}sync(performance.now());});
+window.addEventListener('blur',()=>{audio.pause();keys.clear();drags.clear();});
+window.addEventListener('pagehide',()=>audio.pause());
+document.addEventListener('visibilitychange',()=>{if(document.hidden){audio.pause();keys.clear();drags.clear();balls=[];}sync(performance.now());});
 function drawPreview(sample){
  const points=previewArc(sample);
  ctx.save();
@@ -189,6 +218,7 @@ function controls(now,dt){
  }
 }
 function drawBall(item){if(item.escaped)return;const p=project(item.x,item.h,item.z);drawSphere(ctx,p.x,p.y,p.radius,item.spin,item);}
+let clothWasMoving=false;
 function frame(now){
  const dt=Math.min((now-last)/1000,.25);last=now;sync(now);
  accumulator+=dt;
@@ -196,6 +226,7 @@ function frame(now){
  for(const item of balls){
   const lane=stepBall(item,1/120);
   for(const event of item.events){
+   if(!reducedMotion&&(event.type==='return'||event.type==='bounce'))fabricImpact(now,event.strength);
    audio.play(event.type,event.strength,clamp((project(item.x,item.h,item.z).x-400)/420,-.8,.8));
    if(event.type==='sensor')armReactions[event.lane]={time:now};
    if(event.type==='rim'&&!reducedMotion&&(!netReactions[event.lane]||now-netReactions[event.lane].time>450))netReactions[event.lane]={time:now,rim:true};
@@ -208,16 +239,19 @@ function frame(now){
     makes[item.lane]++;streaks[item.lane]++;stats();
    }
    item.judged=true;audio.play(item.entry.swish?'swish':'net',.8,lane?.5:-.5);
-   if(!reducedMotion)netReactions[lane]={time:now,ball:item};
+   if(!reducedMotion&&netReactions[lane]?.ball!==item)netReactions[lane]={time:now,ball:item};
    flashes.push({lane,time:now,label:value?`+${value}${item.rimHits||item.bankHits?'':' SWISH'}`:'NICE!',good:true});
   }
-  if(!item.judged&&(item.landed||item.age>2.5)){
+  if(!item.judged&&(item.landed||item.escaped||item.age>4.5)){
    item.judged=true;if(running&&item.round===round){streaks[item.lane]=0;stats();}
    flashes.push({lane:item.lane,time:now,label:item.rimHits?'RIM OUT':item.z<.85?'SHORT':'MISSED',good:false});
   }
  }
  }
  balls=balls.filter(item=>item.escaped?item.age<9:item.age<5&&!(item.grounded&&item.z===0));
+ const clothMoving=fabricMoving(now);
+ if(clothMoving||clothWasMoving)backboard(now);
+ clothWasMoving=clothMoving;
  ctx.clearRect(0,0,800,COURT_HEIGHT);
  for(const item of balls.filter(item=>!item.escaped)){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
  const ordered=[...balls].sort((a,b)=>b.z-a.z);

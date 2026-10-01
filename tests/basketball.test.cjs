@@ -13,7 +13,11 @@ const {chromium}=require('playwright');
  assert.equal(pointsAt(30),1);assert.equal(pointsAt(20.001),1);assert.equal(pointsAt(20),2);assert.equal(pointsAt(10),3);assert.equal(pointsAt(0),0);assert.equal(remaining(30000,31000),0);
  // Each scored ball triggers one sensor hit and one quiet ramp return.
  {const ball=makeBall(0,aimFor(0,HOOPS[0]),280,1),events=[];
-  for(let i=0;i<600;i++){stepBall(ball,1/120);events.push(...ball.events.map(event=>event.type));}
+  for(let i=0;i<600;i++){
+   const returning=ball.landed,previousZ=ball.z;
+   stepBall(ball,1/120);events.push(...ball.events.map(event=>event.type));
+   if(returning)assert.ok(ball.z<=previousZ+1e-8,'the net cannot recapture a returning ball');
+  }
   assert.equal(events.filter(type=>type==='sensor').length,1);
   assert.equal(events.filter(type=>type==='return').length,1);
  }
@@ -63,6 +67,24 @@ const {chromium}=require('playwright');
   for(let i=0;i<fps*5;i++){assert.equal(stepBall(ball,1/fps),-1);floorHits+=ball.events.filter(e=>e.type==='floor').length;belowRamp||=ball.h<0;}
   assert.equal(ball.escaped,true);assert.ok(belowRamp);assert.ok(floorHits>=2);assert.ok(ball.floorBounces>=2);
  }
+ // Crossing the rim centre must not award points or snap the sphere's motion.
+ {
+  const ball=makeBall(0,0,280,1),x=hoopWorldX(0)+12;
+  Object.assign(ball,{x,h:physics.RIM_HEIGHT+1,z:1,vx:45,vz:.02,vh:-200});
+  assert.equal(stepBall(ball,1/120),-1);assert.ok(ball.entering);assert.equal(ball.scored,false);
+  assert.ok(Math.abs(ball.x-(x+45/120))<1e-8,'no centring snap');
+  assert.ok(Math.abs(ball.z-(1+.02/120))<1e-8,'depth is preserved');
+  assert.equal(ball.vx,45);assert.equal(ball.vz,.02,'entry keeps lateral momentum');
+  let awards=0;
+  for(let i=0;i<240;i++)if(stepBall(ball,1/240)>=0){awards++;assert.ok(ball.h<physics.RIM_HEIGHT-BALL_RADIUS);}
+  assert.equal(awards,1,'one award after the whole sphere clears');
+ }
+ // The steel lip rejects an off-centre throw consistently, while existing tests
+ // above retain clean swishes and controlled banks at multiple frame rates.
+ for(const fps of [30,60,144]){
+  const miss=flight(makeBall(0,-40,280,1),fps);
+  assert.deepEqual(miss.hits,[]);assert.ok(miss.ball.rimHits>0,'marginal throw rebounds');
+ }
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox']});
  try{
  const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];
@@ -76,7 +98,7 @@ const {chromium}=require('playwright');
  // A ball wholly inside the display bounds must alter its composited pixels.
  // This catches the original HTML-overlay bug, not just a z-index declaration.
  const displayBefore=await page.locator('.scoreboard').screenshot();
- await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=11');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
+ await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=13');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
  const displayAfter=await page.locator('.scoreboard').screenshot();
  assert.equal(displayBefore.equals(displayAfter),false,'ball paints in front of scoreboard');
  await page.screenshot({path:'/tmp/hoops-scoreboard-layer.png',fullPage:true});
@@ -128,11 +150,84 @@ const {chromium}=require('playwright');
  await page.screenshot({path:'/tmp/hoops-escape.png',fullPage:true});}
  await page.reload();assert.equal(await score('#best0'),5);await page.clock.runFor(32);await page.screenshot({path:'/tmp/hoops-desktop.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ // Desktop controls live in the TV beside a larger court; furniture may crop.
+ await page.locator('.office-seating').evaluate(el=>el.decode());
+ const room=await page.locator('.office-seating').boundingBox(),machine=await page.locator('.machine').boundingBox(),panel=await page.locator('.panel').boundingBox();
+ assert.ok(room.x>=machine.x+machine.width);
+ assert.ok(panel.x>machine.x+machine.width,'TV controls sit beside the court');
+ assert.ok(Math.abs(machine.width-521.6)<1,'desktop scene is 80% of its previous size');
+ const tvScreen=await page.locator('.tv-screen').boundingBox();
+ assert.ok(tvScreen.x+tvScreen.width<=1366,'TV controls remain on screen even when the television crops');
+ assert.ok(panel.x>=machine.x+machine.width*1.05,'TV clears the entire projected side net');
+ assert.ok(Math.abs((machine.x+machine.width/2)/1366-.43)<.01,'machine is anchored near the centre');
+ assert.ok(machine.x>200,'leave the mural visible');
+ assert.ok(Math.abs(panel.width/machine.width-.92)<.01,'TV scales with the machine');
+ assert.equal(await page.locator('.panel').evaluate(el=>Boolean(el.closest('[aria-hidden="true"]'))),false,'TV controls are accessible');
+ assert.equal(await page.locator('.tv-screen').evaluate(el=>el.scrollWidth>el.clientWidth||el.scrollHeight>el.clientHeight),false,'compact controls fit the screen');
+ await page.locator('.instructions>summary').focus();await page.keyboard.press('Enter');
+ assert.equal(await page.locator('.instructions').evaluate(el=>el.open),true,'instructions open from the keyboard');
+ await page.keyboard.press('Enter');
+ for(const [width,height]of [[1024,768],[1280,800],[1995,1248]]){
+  await page.setViewportSize({width,height});await page.clock.runFor(32);
+  const tv=await page.locator('.tv-screen').boundingBox();
+  assert.ok(tv.x+tv.width<=width,'TV controls remain visible');
+  assert.equal(await page.locator('.tv-screen').evaluate(el=>el.scrollWidth>el.clientWidth||el.scrollHeight>el.clientHeight),false);
+  const court=await page.locator('#court').boundingBox();
+  assert.ok(court.y+RACK_Y*court.width/800<height,'balls stay reachable without scrolling');
+ }
+ await page.setViewportSize({width:1366,height:900});await page.clock.runFor(32);
+ const backdrop=await page.locator('.court-backdrop').boundingBox(),display=await page.locator('.scoreboard').boundingBox();
+ assert.ok(display.width<backdrop.width*.12,'compact display');
  await page.setViewportSize({width:390,height:844});await page.clock.runFor(32);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/hoops-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
+ const mobileMachine=await page.locator('.machine').boundingBox(),mobilePanel=await page.locator('.panel').boundingBox();
+ assert.ok(mobilePanel.y>=mobileMachine.y+mobileMachine.height,'mobile controls stay below the machine');
  // Actual touch gestures, using the same shot mapping and a high-DPI canvas.
- const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true});
+ const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true,userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
  await mobile.clock.install({time:instant});await mobile.clock.pauseAt(instant);
- await mobile.goto('http://localhost:8765/basketball/');await mobile.locator('#start').tap();
+ await mobile.addInitScript(()=>{
+  window.Audio=function(src){throw new Error('The removed media-track workaround must not run');};
+  // Reproduce the phone report: down/start cannot unlock, completed touch/click can.
+  const NativeContext=window.AudioContext;
+  window.AudioContext=class extends NativeContext{
+   constructor(...args){super(...args);this.authorized=false;super.suspend();window.testAudioContext=this;}
+   get state(){return this.authorized?super.state:'suspended';}
+   resume(){
+    const event=window.event;
+    const eligible=event&&(['pointerup','touchend','click'].includes(event.type)||(event.type==='pointerdown'&&event.pointerType==='mouse'));
+    if(!eligible)return new Promise(()=>{});
+    this.authorized=true;return super.resume();
+   }
+  };
+ });
+ await mobile.goto('http://localhost:8765/basketball/');
+ // A first swipe must activate audio on release without Test sound or Start.
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Context: not created/);
+ const firstTouch=await mobile.context().newCDPSession(mobile);
+ const firstCourt=await mobile.locator('#court').boundingBox();
+ const firstAt=(x,y)=>({x:firstCourt.x+x*firstCourt.width/800,y:firstCourt.y+y*firstCourt.height/COURT_HEIGHT});
+ await firstTouch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[firstAt(216,RACK_Y)]});
+ await mobile.clock.runFor(32);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state||'not created'),'not created','touchstart no longer assumes activation');
+ for(let i=1;i<=14;i++){await mobile.clock.runFor(25);await firstTouch.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[firstAt(216,RACK_Y-240*i/14)]});}
+ await firstTouch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+ await mobile.clock.runFor(2300);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','first swipe unlocks without Test sound');
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Files: 7\/7 decoded · 0 failed/);
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Effects: \d+ requested · [1-9]\d* scheduled/,'normal shot effects play');
+ // A tap anywhere in the game is also sufficient after a fresh load.
+ await mobile.reload();await mobile.locator('#court').tap({position:{x:20,y:20}});await mobile.clock.runFor(32);
+ assert.equal(await mobile.evaluate(()=>window.testAudioContext?.state),'running','ordinary tap unlocks after reload');
+ await mobile.locator('#sound').tap();
+ assert.match(await mobile.locator('#audio-debug').textContent(),/Audio: off/);
+ await mobile.locator('#court').tap({position:{x:20,y:20}});
+ assert.equal(await mobile.locator('#sound').getAttribute('aria-pressed'),'false','automatic activation respects mute');
+ await mobile.locator('#test-sound').tap();await mobile.clock.runFor(100);
+ assert.match(await mobile.locator('#message').textContent(),/^Test bounce scheduled/);
+ const debug=await mobile.locator('#audio-debug').textContent();
+ assert.match(debug,/Context: running/);assert.match(debug,/Files: 7\/7 decoded · 0 failed/);
+ assert.match(debug,/Effects: 1 requested · 1 scheduled/);
+ await mobile.screenshot({path:'/tmp/hoops-audio-debug.png',fullPage:true});
+ await mobile.locator('#start').tap();
  const rect=await mobile.locator('#court').boundingBox(),session=await mobile.context().newCDPSession(mobile);
  const touch=(x,y)=>({x:rect.x+x*rect.width/800,y:rect.y+y*rect.height/COURT_HEIGHT});
  await session.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[touch(584,RACK_Y)]});

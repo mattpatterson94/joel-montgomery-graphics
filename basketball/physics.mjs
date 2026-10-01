@@ -8,7 +8,7 @@ export const SHOT_RATE = 1.2;
 export const RIM_HEIGHT = (510 - RIM_Y) / .6;
 export const GRAVITY = 1800 * SHOT_RATE * SHOT_RATE;
 export const BALL_RADIUS = 52;
-export const RIM_RADIUS = 64 / .6;
+export const RIM_RADIUS = 60 / .6;
 const CONTACT_RADIUS = BALL_RADIUS + 4;
 export const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 export const remaining = (deadline, now) => Math.max(0, (deadline - now) / 1000);
@@ -51,8 +51,22 @@ export function stepBall(ball, dt) {
     const oldH=ball.h, oldX=ball.x, oldZ=ball.z;
     ball.x+=ball.vx*step; ball.z+=ball.vz*step; ball.age+=step;
     for(let axis=0;axis<3;axis++)ball.spin[axis]+=ball.omega[axis]*step;
-    if(ball.scored&&ball.h>RIM_HEIGHT-120&&ball.vh<0)ball.vh*=Math.exp(-2.2*step);
+    // Net drag starts only after the sphere has cleared the rim. Keep momentum;
+    // there is no snap to a hoop position or abrupt cancellation of side speed.
+    if(ball.scored&&!ball.netExited&&!ball.landed&&ball.h>RIM_HEIGHT-150&&ball.vh<0){
+      ball.vh*=Math.exp(-2.8*step);
+      // The narrowing net resists a ball only when it presses into the cords.
+      // This soft contact follows its entry direction rather than centring it.
+      const dx=ball.x-hoopWorldX(ball.scoredLane),dz=(ball.z-1)*700,radial=Math.hypot(dx,dz);
+      const progress=clamp((RIM_HEIGHT-ball.h)/150,0,1),clearance=RIM_RADIUS-40*progress-BALL_RADIUS+20;
+      if(radial>clearance){
+        const nx=dx/radial,nz=dz/radial,outward=ball.vx*nx+ball.vz*700*nz;
+        const resistance=Math.max(0,(radial-clearance)*200+outward*14);
+        ball.vx-=nx*resistance*step;ball.vz-=nz*resistance*step/700;
+      }
+    }
     if(!ball.grounded) {ball.h+=ball.vh*step-GRAVITY*step*step/2; ball.vh-=GRAVITY*step;}
+    if(ball.scored&&ball.h<=RIM_HEIGHT-150)ball.netExited=true;
     const screen=project(ball.x,ball.h,ball.z);
     if(!ball.escaped&&(screen.x<22||screen.x>778)){
       ball.escaped=true;ball.grounded=false;ball.floorBounces=0;
@@ -90,14 +104,13 @@ export function stepBall(ball, dt) {
       ball.omega[0]*=-.6;ball.omega[1]*=.8;
     }
     if(!ball.scored && !ball.landed) {
-      // Score once, only when the centre descends inside the actual ring opening.
+      // Track an entry, but wait until the TOP of the sphere clears the ring
+      // before counting it. A marginal entry can still catch the lip or roll out.
       if(oldH>RIM_HEIGHT && ball.h<=RIM_HEIGHT && ball.vh<0) {
         const t=(oldH-RIM_HEIGHT)/(oldH-ball.h), x=oldX+(ball.x-oldX)*t, z=oldZ+(ball.z-oldZ)*t;
         for(let lane=0;lane<2;lane++) {
           if(Math.hypot(x-hoopWorldX(lane),(z-1)*700)<RIM_RADIUS-CONTACT_RADIUS) {
-            ball.entry={x:x-hoopWorldX(lane),speed:-ball.vh,swish:ball.rimHits===0&&ball.bankHits===0,age:ball.age};
-            ball.scored=true; ball.scoredLane=lane; basket=lane; ball.z=1; ball.vz=0;ball.vh*=.68;
-            ball.x=hoopWorldX(lane)+(x-hoopWorldX(lane))*.5; ball.vx*=.15;
+            ball.entering={lane,x:x-hoopWorldX(lane),z:(z-1)*700,speed:-ball.vh};
             break;
           }
         }
@@ -115,7 +128,7 @@ export function stepBall(ball, dt) {
           ball.x+=nx*penetration; ball.z+=nz*penetration/700; ball.h+=nh*penetration;
           const speed=ball.vx*nx+ball.vz*700*nz+ball.vh*nh;
           if(speed<0) {
-            ball.vx-=1.58*speed*nx; ball.vz-=1.58*speed*nz/700; ball.vh-=1.58*speed*nh;
+            ball.vx-=1.72*speed*nx; ball.vz-=1.72*speed*nz/700; ball.vh-=1.72*speed*nh;
             if(ball.age-(ball.lastRimHit??-1)>.08){
               ball.rimHits++;ball.lastRimHit=ball.age;
               ball.events.push({type:'rim',strength:clamp(-speed/650,.15,1),lane});
@@ -124,6 +137,15 @@ export function stepBall(ball, dt) {
           }
         }
       }
+    }
+    if(ball.entering&&ball.h>RIM_HEIGHT)ball.entering=null;
+    if(!ball.scored&&ball.entering&&ball.h<RIM_HEIGHT-CONTACT_RADIUS&&ball.vh<0){
+      const entry=ball.entering;
+      if(Math.hypot(ball.x-hoopWorldX(entry.lane),(ball.z-1)*700)<RIM_RADIUS){
+        ball.entry={...entry,swish:ball.rimHits===0&&ball.bankHits===0,age:ball.age};
+        ball.scored=true;ball.scoredLane=entry.lane;basket=entry.lane;
+      }
+      ball.entering=null;
     }
     if(ball.scored&&!ball.sensorHit&&ball.h<RIM_HEIGHT-65){ball.sensorHit=true;ball.events.push({type:'sensor',strength:.85,lane:ball.scoredLane});}
     if(ball.h<BALL_RADIUS && ball.vh<0) {

@@ -2,25 +2,95 @@
 const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact']};
 const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
 export class CourtAudio {
- constructor(context=null){this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
- unlock(){
+ constructor(context=null){
+  this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};
+  this.files=new Map();this.requested=0;this.scheduled=0;this.finished=0;
+  this.lastEffect='none';this.lastPlayback='none';this.lastGesture='none';this.lastError='none';
+  this.unlocked=false;this.priming=false;this.onchange=null;
+ }
+ notify(){this.onchange?.();}
+ error(stage,error){this.lastError=`${stage}: ${error?.name||'Error'} — ${error?.message||String(error)}`;this.notify();}
+ diagnostics(){
+  const total=Object.values(RECORDINGS).flat().length;
+  const loaded=[...this.files.values()].filter(state=>state==='decoded').length;
+  const failed=[...this.files.values()].filter(state=>state==='failed').length;
+  const state=this.context?.state||'not created';
+  const status=!this.enabled?'off':state==='running'&&this.unlocked?'unlocked':this.priming?'starting':'locked';
+  return `Audio check · v21\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
+ }
+ unlock(fromGesture=false,gesture='interaction'){
   if(!this.enabled)return;
-  try{this.context??=new (window.AudioContext||window.webkitAudioContext)();if(this.context.state==='suspended'&&typeof this.context.startRendering!=='function')this.context.resume().catch(()=>{});this.loadSamples();}catch{}
+  // A simulation tick never creates or unlocks the audio device.
+  if(!this.context&&!fromGesture)return;
+  try{
+   if(fromGesture)this.lastGesture=gesture;
+   if(fromGesture&&globalThis.navigator?.audioSession){
+    try{navigator.audioSession.type='playback';}catch(error){this.error('audio session',error);}
+   }
+   this.context??=new (window.AudioContext||window.webkitAudioContext)();
+   const ctx=this.context;
+   if(typeof ctx.startRendering!=='function'){
+    if(!this.observing){
+     this.observing=true;
+     ctx.addEventListener('statechange',()=>{if(ctx.state!=='running')this.unlocked=false;this.notify();});
+    }
+    if(fromGesture){
+     // Both calls happen synchronously in a browser activation event (mouse
+     // down, touch completion or button click), before any await or fetch.
+     if(ctx.state!=='running'){
+      this.resumePromise=ctx.resume().then(()=>this.notify(),error=>{this.error('resume',error);});
+     }
+     if(!this.unlocked&&!this.priming){
+      const source=ctx.createBufferSource();
+      source.buffer=ctx.createBuffer(1,1,ctx.sampleRate);source.connect(ctx.destination);
+      this.priming=true;
+      source.onended=()=>{this.priming=false;this.unlocked=ctx.state==='running';source.disconnect();this.notify();};
+      try{source.start(0);}catch(error){this.priming=false;source.disconnect();throw error;}
+     }
+    }
+   }
+   this.loadSamples();
+  }catch(error){this.error('unlock',error);}
+  this.notify();
+ }
+ setEnabled(enabled,gesture='sound button'){
+  this.enabled=enabled;
+  if(enabled)this.unlock(true,gesture);
+  this.notify();
+ }
+ pause(){
+  if(this.context?.state==='running'&&typeof this.context.startRendering!=='function'){
+   this.context.suspend().catch(error=>this.error('suspend',error));
+  }
+ }
+ async test(){
+  this.setEnabled(true,'test button');
+  if(!this.context)throw new Error('Audio is unavailable in this browser.');
+  let timer;
+  try{
+   await Promise.race([this.context.state==='running'?Promise.resolve():this.resumePromise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Sound is blocked. Try tapping Test sound again.')),1800);})]);
+   if(this.context.state!=='running')throw new Error('Sound is blocked. Try tapping Test sound again.');
+   this.play('rim',1);
+   if(this.lastPlayback==='failed')throw new Error(this.lastError);
+  }catch(error){this.error('test',error);throw error;}
+  finally{clearTimeout(timer);}
  }
  async loadSamples(){
   if(!this.context)return;
   if(this.loading)return this.loading;
   this.loading=Promise.all(Object.entries(RECORDINGS).map(async([type,names])=>{
    const buffers=await Promise.all(names.map(async name=>{
+    this.files.set(name,'loading');
     try{
      const response=await fetch(new URL(`./audio/${name}.wav`,import.meta.url));
-     if(!response.ok)throw new Error('Audio unavailable');
-     return await this.context.decodeAudioData(await response.arrayBuffer());
-    }catch{return null;}
+     if(!response.ok)throw new Error(`HTTP ${response.status}`);
+     const buffer=await this.context.decodeAudioData(await response.arrayBuffer());
+     this.files.set(name,'decoded');this.notify();return buffer;
+    }catch(error){this.files.set(name,'failed');this.error(name,error);return null;}
    }));
    this.samples[type]=buffers.filter(Boolean);
-  }));
-  return this.loading;
+  })).then(()=>{this.loadingDone=true;this.notify();});
+  this.notify();return this.loading;
  }
  setup(){
   const ctx=this.context;
@@ -31,10 +101,21 @@ export class CourtAudio {
   for(let i=0;i<data.length;i++){const white=Math.random()*2-1;data[i]=white*.7+previous*.3;previous=white;}
  }
  play(type,strength=.7,pan=0){
-  if(!this.enabled)return;
-  this.unlock();if(!this.context)return;this.setup();
+  this.requested++;this.lastEffect=type;this.lastPlayback='requested';
+  const voices=this.voices;
+  try{this.playEffect(type,strength,pan);}
+  catch(error){this.voices=voices;this.lastPlayback='failed';this.error(`effect ${type}`,error);}
+  this.notify();
+ }
+ playEffect(type,strength,pan){
+  if(!this.enabled){this.lastPlayback='muted';return;}
+  if(globalThis.document?.hidden&&typeof this.context?.startRendering!=='function'){this.lastPlayback='background';return;}
+  this.unlock();if(!this.context){this.lastPlayback='no context';return;}
+  // Don't accumulate delayed effects while a phone has blocked audio.
+  if(this.context.state!=='running'&&typeof this.context.startRendering!=='function'){this.lastPlayback=`blocked (${this.context.state})`;return;}
+  this.setup();
   const ctx=this.context,now=ctx.currentTime;
-  if(this.voices>22||now-(this.last.get(type)??-1)<.025)return;
+  if(this.voices>22||now-(this.last.get(type)??-1)<.025){this.lastPlayback='limited';return;}
   this.last.set(type,now);this.voices++;
   const output=ctx.createGain(),panner=ctx.createStereoPanner();
   output.gain.value=.12*Math.max(.1,Math.min(1,strength));panner.pan.value=Math.max(-.8,Math.min(.8,pan));output.connect(panner);panner.connect(this.bus);
@@ -99,7 +180,8 @@ export class CourtAudio {
     mode(92,.22,.5,.8);mode(92,.2,.4,.8,.19);
   }
   let left=sources.length;
-  const cleanup=()=>{if(--left===0){nodes.forEach(node=>node.disconnect());this.voices--;}};
+  if(left){this.scheduled++;this.lastPlayback=clips?.length?'recording scheduled':'generated sound scheduled';}
+  const cleanup=()=>{if(--left===0){nodes.forEach(node=>node.disconnect());this.voices--;this.finished++;this.notify();}};
   if(!left){nodes.forEach(node=>node.disconnect());this.voices--;}
   else sources.forEach(source=>source.onended=cleanup);
  }

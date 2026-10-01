@@ -2,8 +2,9 @@ import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, c
 import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=13';
 import {drawBall as drawSphere} from './ball-renderer.mjs?v=13';
 import {drawSensorArm} from './sensor.mjs?v=13';
-import {drawFabricReturn} from './fabric.mjs?v=13';
-import {drawSideNet} from './side-net.mjs?v=14';
+import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
+import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
+import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
 import {CourtAudio} from './sound.mjs?v=13';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
@@ -65,7 +66,7 @@ function path(c, coords, fill, stroke, width=1) {c.beginPath();coords.forEach(([
 function ellipse(c,x,y,rx,ry,fill,stroke,width=1){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 const artwork = new Image();
 artwork.src = new URL('./backboard-reference.png', import.meta.url).href;
-function backboard(){
+function backboard(now=performance.now()){
  b.clearRect(-40,0,880,COURT_HEIGHT);
  // Display the actual left-hand artwork from the supplied reference at its native
  // aspect ratio. Clip the white corners, without redrawing any of the print design.
@@ -76,23 +77,23 @@ function backboard(){
   // Cover the pale antialiased crop edge around the black header.
   b.beginPath();b.roundRect(36,24,728,432,[65,65,0,0]);b.strokeStyle='#101213';b.lineWidth=2.5;b.stroke();
  }
- drawFabricReturn(b);
+ drawFabricReturn(b,now);
  for(const flip of [1,-1]){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
   drawSideNet(b);b.restore();
  }
  // The front catcher is a deep fabric sling between two rails.
- b.beginPath();b.moveTo(26,876);b.quadraticCurveTo(400,938,774,876);
- b.lineTo(774,943);b.quadraticCurveTo(400,980,26,943);b.closePath();
+ b.beginPath();b.moveTo(frontLeft,876);b.quadraticCurveTo(400,938,frontRight,876);
+ b.lineTo(frontRight,943);b.quadraticCurveTo(400,965,frontLeft,943);b.closePath();
  const pocket=b.createLinearGradient(0,875,0,960);pocket.addColorStop(0,'#373b39');pocket.addColorStop(.5,'#111615');pocket.addColorStop(1,'#070b0b');b.fillStyle=pocket;b.fill();
  for(const y of [881,945]){
-  b.beginPath();b.moveTo(25,y+12);b.quadraticCurveTo(17,y,40,y);b.lineTo(760,y);b.quadraticCurveTo(783,y,775,y+12);
+  b.beginPath();b.moveTo(frontLeft,y+12);b.quadraticCurveTo(frontLeft-7,y,frontLeft+14,y);b.lineTo(frontRight-14,y);b.quadraticCurveTo(frontRight+7,y,frontRight,y+12);
   b.strokeStyle='#4b5352';b.lineWidth=10;b.stroke();b.strokeStyle='#aeb9b7';b.lineWidth=3;b.stroke();
  }
- for(const x of [26,774]){path(b,[[x,891],[x,944]],null,'#87928e',7);}
+ for(const x of [frontLeft,frontRight]){path(b,[[x,891],[x,944]],null,'#87928e',7);}
  b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],929);b.fillText('P2',HOOPS[1],929);
 }
-artwork.addEventListener('load',backboard);
+artwork.addEventListener('load',()=>backboard());
 artwork.addEventListener('error',()=>{message.textContent='Backboard image could not load. Reload the page to try again.';});
 backboard();
 function shoot(item){
@@ -194,6 +195,7 @@ function controls(now,dt){
  }
 }
 function drawBall(item){if(item.escaped)return;const p=project(item.x,item.h,item.z);drawSphere(ctx,p.x,p.y,p.radius,item.spin,item);}
+let clothWasMoving=false;
 function frame(now){
  const dt=Math.min((now-last)/1000,.25);last=now;sync(now);
  accumulator+=dt;
@@ -201,6 +203,7 @@ function frame(now){
  for(const item of balls){
   const lane=stepBall(item,1/120);
   for(const event of item.events){
+   if(!reducedMotion&&(event.type==='return'||event.type==='bounce'))fabricImpact(now,event.strength);
    audio.play(event.type,event.strength,clamp((project(item.x,item.h,item.z).x-400)/420,-.8,.8));
    if(event.type==='sensor')armReactions[event.lane]={time:now};
    if(event.type==='rim'&&!reducedMotion&&(!netReactions[event.lane]||now-netReactions[event.lane].time>450))netReactions[event.lane]={time:now,rim:true};
@@ -223,6 +226,9 @@ function frame(now){
  }
  }
  balls=balls.filter(item=>item.escaped?item.age<9:item.age<5&&!(item.grounded&&item.z===0));
+ const clothMoving=fabricMoving(now);
+ if(clothMoving||clothWasMoving)backboard(now);
+ clothWasMoving=clothMoving;
  ctx.clearRect(0,0,800,COURT_HEIGHT);
  for(const item of balls.filter(item=>!item.escaped)){const p=project(item.x,0,item.z);ellipse(ctx,p.x,p.y,p.radius*(1+item.h/800),p.radius*.2,'#00000025');}
  const ordered=[...balls].sort((a,b)=>b.z-a.z);

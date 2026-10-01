@@ -6,25 +6,25 @@
   <title>Design Utilities</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="assets/favicon.ico">
-  <link rel="stylesheet" href="styles.css?v=secret-reveal">
+  <link rel="stylesheet" href="styles.css?v=icon-grid-1">
 </head>
 <body>
   <main class="card">
     <header><img src="assets/easilLogo.png" alt="" width="24" height="24"><h1>Design Utilities</h1></header>
     <nav aria-label="Design utilities">
-      <a href="shape-mask/"><span>Shape Mask Converter</span><span aria-hidden="true">→</span></a>
-      <a href="stretch-repeat/"><span>Stretch &amp; Repeat Converter</span><span aria-hidden="true">→</span></a>
-      <a href="repeat/"><span>Repeating Element Maker</span><span aria-hidden="true">→</span></a>
-      <a href="stretchable/"><span>Stretchable Shape Creator</span><span aria-hidden="true">→</span></a>
+      <a href="shape-mask/"><img class="tool-icon" src="assets/icons/shape-mask.png" alt="" width="72" height="72"><span class="tool-name">Shape Mask<br>Converter</span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="stretch-repeat/"><img class="tool-icon" src="assets/icons/stretch-repeat.png" alt="" width="72" height="72"><span class="tool-name">Stretch &amp; Repeat<br>Converter</span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="repeat/"><img class="tool-icon" src="assets/icons/repeat.png" alt="" width="72" height="72"><span class="tool-name">Repeating<br>Shape Converter</span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="stretchable/"><img class="tool-icon" src="assets/icons/stretchable.png" alt="" width="72" height="72"><span class="tool-name">Stretchable<br>Shape Converter</span><span class="chevron" aria-hidden="true"></span></a>
     </nav>
   </main>
   <script>
     window.setTimeout(() => {
       const link = document.createElement('a');
       link.href = '../basketball/';
-      link.innerHTML = '<span>🏀 Secret Basketball Game</span><span aria-hidden="true">→</span>';
+      link.innerHTML = '<img class="tool-icon" src="assets/icons/basketball.png" alt="" width="72" height="72"><span class="tool-name">Secret Basketball Game</span><span class="chevron" aria-hidden="true"></span>';
       const reveal = document.createElement('div');
       reveal.className = 'secret-reveal';
       reveal.append(link);
@@ -36,7 +36,7 @@
       document.querySelector('nav[aria-label="Design utilities"]').append(reveal);
 
       if (animate) {
-        const height = link.getBoundingClientRect().height + 12;
+        const height = link.getBoundingClientRect().height + parseFloat(getComputedStyle(link).marginTop);
         const expand = reveal.animate(
           [{ height: '0px' }, { height: height + 'px' }],
           { duration: 600, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' }
@@ -55,3 +55,4 @@
   </script>
 </body>
 </html>
+

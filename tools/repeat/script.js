@@ -83,6 +83,7 @@
         el.removeAttribute('class');
       }
       live.querySelectorAll('style').forEach(el => el.remove());
+      const sizing = fitSVGTo240(live);
       // Prefix every source ID so PATTERN and REPEAT_X remain exact app markers.
       const ids = new Map([...live.querySelectorAll('[id]'), ...(live.id ? [live] : [])].map((el,i) => [el.id, `art-${i}`]));
       for (const el of [live, ...live.querySelectorAll('*')]) {
@@ -97,9 +98,9 @@
       // when the app replaces the outer pattern with a group of repeated uses.
       artwork.setAttribute('x', '0'); artwork.setAttribute('y', '0');
       artwork.style.setProperty('x', '0px'); artwork.style.setProperty('y', '0px');
-      artwork.style.setProperty('width', `${vb[2]}px`); artwork.style.setProperty('height', `${vb[3]}px`);
+      artwork.style.setProperty('width', `${sizing.width}px`); artwork.style.setProperty('height', `${sizing.height}px`);
       artwork.style.setProperty('overflow', 'hidden');
-      return {width:vb[2], height:vb[3], artwork};
+      return {...sizing, artwork};
     } finally {frame.remove();}
   }
   function build(data, width = data.width, simulate = false) {
@@ -124,15 +125,15 @@
     $('output-code').value = build(model);
     const next = URL.createObjectURL(new Blob([build(model,width,true)],{type:'image/svg+xml'}));
     $('preview').src=next;if(previewURL) URL.revokeObjectURL(previewURL);previewURL=next;
-    $('width-label').textContent=`${displayNumber(width)} × ${displayNumber(model.height)}`;
-    $('tile-size').textContent=`Tile size: ${displayNumber(model.width)} × ${displayNumber(model.height)} SVG units`;
+    $('width-label').textContent=`${displayNumber(width/model.scale)} × ${displayNumber(model.originalSize.height)}`;
+    $('tile-size').textContent=`Tile size: ${displayNumber(model.originalSize.width)} × ${displayNumber(model.originalSize.height)} original SVG units`;
   }
   async function convert(source,name='element.svg') {
     const token=++generation;model=null;$('result').hidden=true;status('Reading SVG…');
     try {
       const next=await inspect(source);if(token!==generation)return;
       model=next;filename=name.replace(/\.svg$/i,'');$('preview-width').value=3;
-      refresh();$('result').hidden=false;status(`${name} · Converted successfully`);
+      refresh();$('result').hidden=false;status(`${name} · Converted successfully${model.scale < 1 ? ` · Output: ${displayNumber(model.width)} × ${displayNumber(model.height)}` : ""}`);
     } catch(error) {if(token===generation) status(error.message,true);}
   }
   async function upload(files) {
@@ -159,3 +160,4 @@
   });
   window.RepeatMaker={inspect,build};
 })();
+

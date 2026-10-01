@@ -150,14 +150,32 @@ const {chromium}=require('playwright');
  await page.screenshot({path:'/tmp/hoops-escape.png',fullPage:true});}
  await page.reload();assert.equal(await score('#best0'),5);await page.clock.runFor(32);await page.screenshot({path:'/tmp/hoops-desktop.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- // Desktop furniture must load, sit beside the court and stay clear of controls.
+ // Desktop controls live in the TV beside a larger court; furniture may crop.
  await page.locator('.office-seating').evaluate(el=>el.decode());
  const room=await page.locator('.office-seating').boundingBox(),machine=await page.locator('.machine').boundingBox(),panel=await page.locator('.panel').boundingBox();
  assert.ok(room.x>=machine.x+machine.width);
- assert.ok(panel.x+panel.width<machine.x,'controls leave the scene visible');
+ assert.ok(panel.x>machine.x+machine.width,'TV controls sit beside the court');
+ assert.ok(machine.width>600,'desktop machine remains close enough to play');
+ assert.ok(panel.x+panel.width<=1366,'TV controls remain on screen');
+ assert.equal(await page.locator('.panel').evaluate(el=>Boolean(el.closest('[aria-hidden="true"]'))),false,'TV controls are accessible');
+ assert.equal(await page.locator('.tv-screen').evaluate(el=>el.scrollWidth>el.clientWidth||el.scrollHeight>el.clientHeight),false,'compact controls fit the screen');
+ await page.locator('.instructions>summary').focus();await page.keyboard.press('Enter');
+ assert.equal(await page.locator('.instructions').evaluate(el=>el.open),true,'instructions open from the keyboard');
+ await page.keyboard.press('Enter');
+ for(const [width,height]of [[1024,768],[820,600]]){
+  await page.setViewportSize({width,height});await page.clock.runFor(32);
+  const tv=await page.locator('.panel').boundingBox();
+  assert.ok(tv.x+tv.width<=width,'TV remains visible on a small desktop');
+  assert.equal(await page.locator('.tv-screen').evaluate(el=>el.scrollWidth>el.clientWidth||el.scrollHeight>el.clientHeight),false);
+  const court=await page.locator('#court').boundingBox();
+  assert.ok(court.y+RACK_Y*court.width/800<height,'balls stay reachable without scrolling');
+ }
+ await page.setViewportSize({width:1366,height:900});await page.clock.runFor(32);
  const backdrop=await page.locator('.court-backdrop').boundingBox(),display=await page.locator('.scoreboard').boundingBox();
  assert.ok(display.width<backdrop.width*.12,'compact display');
  await page.setViewportSize({width:390,height:844});await page.clock.runFor(32);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/hoops-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
+ const mobileMachine=await page.locator('.machine').boundingBox(),mobilePanel=await page.locator('.panel').boundingBox();
+ assert.ok(mobilePanel.y>=mobileMachine.y+mobileMachine.height,'mobile controls stay below the machine');
  // Actual touch gestures, using the same shot mapping and a high-DPI canvas.
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true});
  await mobile.clock.install({time:instant});await mobile.clock.pauseAt(instant);

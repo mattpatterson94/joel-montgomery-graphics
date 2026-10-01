@@ -42,19 +42,49 @@ canvas.court-backdrop{position:absolute;inset:0;z-index:0;width:100%;height:100%
 .clock output{font-size:2.8cqw}
 .scores output{font-size:2cqw}
 .scores{margin-top:.1cqw}
-@media(min-width:801px){.game-layout{grid-template-columns:238px minmax(0,1fr)}.machine{grid-column:2;grid-row:1}.panel{grid-column:1;grid-row:1;align-self:start;padding:18px;background:#161b1fe8}.instructions{padding-top:12px}.player-stats{padding:12px 0}.instructions p{margin:7px 0}.panel-footer{margin-top:12px}}
-/* Keep the playable court central and leave the TV/seating visible on desktop. */
-@media(min-width:1100px){
- main{width:min(1680px,100%);padding:24px}
- .game-layout{grid-template-columns:238px minmax(0,1fr) minmax(0,.96fr);gap:24px}
- .machine{grid-column:2;grid-row:1}
- .panel{grid-column:1;grid-row:1;background:#161b1ff5}
- header{margin-left:0;margin-right:0}
-}
-
 /* Side nets project beyond the print; the input canvas retains its coordinates. */
 body{overflow-x:clip}
 canvas.court-backdrop{left:-5%;right:auto;width:110%;border-radius:0}
 main{overflow-x:clip}
 
 .machine-frame{overflow:visible}
+
+/* Keep the machine close; furniture can continue beyond the viewport. */
+.instructions{padding-top:0;margin-top:12px}
+.instructions>summary{cursor:pointer;font-size:12px;color:#e2d5df}
+.instructions>summary:focus-visible{outline:2px solid white;outline-offset:4px}
+@media(min-width:801px){
+ main{width:100%;padding:24px}
+ header{margin-left:0;margin-right:0}
+ .game-layout{display:block}
+ .machine{justify-self:start;width:min(64vw,calc((100svh - 85px)/1.25),900px);max-width:none;margin-left:clamp(24px,8vw,160px)}
+ .wall-tv{display:none}
+ /* This is the TV: one live set of controls, in normal reading order. */
+ .panel{position:absolute;left:calc(var(--court-right) + 12px);top:calc(var(--court-top) + var(--court-width)*.055);
+  width:min(540px,calc(100vw - var(--court-right) - 36px));padding:0;
+  border:5px solid #101214;border-bottom-width:9px;border-radius:4px;
+  background:linear-gradient(155deg,#263336,#10191d 70%);box-shadow:4px 6px 14px #0008}
+ .panel::after{content:"";position:absolute;left:53%;top:calc(100% + 9px);width:40px;height:120px;border-left:2px solid #090b0c;border-radius:0 0 0 80%;transform:rotate(-15deg);pointer-events:none}
+ .tv-screen{width:100%;min-width:0;aspect-ratio:16/9;min-height:238px;overflow-y:auto;padding:14px 16px;scrollbar-width:thin;scrollbar-color:#5d686b #142024}
+ .controls{grid-template-columns:142px 1fr;gap:14px;align-items:center}
+ .controls button{padding:11px 14px;font-size:13px}
+ .controls p{font-size:11px;min-height:0;line-height:1.4}
+ .player-stats{padding:12px 0 8px;gap:26px;border-color:#425054}
+ .player-stats h2{margin-bottom:6px;font-size:11px}
+ .player-stats h2 span{display:inline;margin-left:6px;font-size:8px}
+ .player-stats dl>div{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin:4px 0}
+ .player-stats dt{margin:0;font-size:10px}
+ .player-stats dd{font-size:12px}
+ .panel-footer{margin-top:10px}
+ .quiet-button{padding:6px 9px}
+ .rules{margin-top:6px;font-size:10px}
+ .instructions{margin-top:6px}
+ .instructions>summary{font-size:11px}
+ .instructions p{margin:7px 0;line-height:1.5}
+}
+@media(min-width:801px) and (max-width:1100px){
+ .machine{width:min(calc(100vw - 430px),calc((100svh - 85px)/1.25));margin-left:24px}
+ .tv-screen{padding:12px}
+ .controls{grid-template-columns:124px 1fr;gap:10px}
+ .player-stats{gap:18px}
+}

@@ -11,17 +11,19 @@ const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
 const office=document.querySelector('.office');
+// Share room coordinates with the accessible TV controls in <main>.
+const roomStyle=document.body.style;
 function alignOffice(){
  const rect=canvas.getBoundingClientRect(),top=rect.top+window.scrollY;
- office.style.setProperty('--court-left',`${rect.left}px`);
- office.style.setProperty('--court-right',`${rect.right}px`);
- office.style.setProperty('--court-top',`${top}px`);
- office.style.setProperty('--court-width',`${rect.width}px`);
+ roomStyle.setProperty('--court-left',`${rect.left}px`);
+ roomStyle.setProperty('--court-right',`${rect.right}px`);
+ roomStyle.setProperty('--court-top',`${top}px`);
+ roomStyle.setProperty('--court-width',`${rect.width}px`);
  const cornerX=Math.max(0,rect.left-12),cornerY=top+rect.width*1.28;
  const nearY=cornerY+cornerX*.36;
- office.style.setProperty('--corner-x',`${cornerX}px`);
- office.style.setProperty('--corner-y',`${cornerY}px`);
- office.style.setProperty('--near-floor-y',`${nearY}px`);
+ roomStyle.setProperty('--corner-x',`${cornerX}px`);
+ roomStyle.setProperty('--corner-y',`${cornerY}px`);
+ roomStyle.setProperty('--near-floor-y',`${nearY}px`);
  office.querySelector('.floor-edge path').setAttribute('d',`M0 ${nearY}L${cornerX} ${cornerY}H${document.documentElement.clientWidth}`);
 }
 new ResizeObserver(alignOffice).observe(canvas);

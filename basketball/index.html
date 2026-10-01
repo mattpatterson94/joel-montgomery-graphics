@@ -8,8 +8,8 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=11">
   <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png?v=11">
   <link rel="icon" type="image/svg+xml" href="favicon.svg?v=11">
-  <link rel="stylesheet" href="styles.css?v=16">
-  <script type="module" src="game.js?v=16"></script>
+  <link rel="stylesheet" href="styles.css?v=17">
+  <script type="module" src="game.js?v=17"></script>
 </head>
 <body>
   <div class="office" aria-hidden="true"><div class="mural"></div><div class="wall-tv"><div class="tv-reflection"></div></div><div class="office-floor"></div><img class="office-seating" src="office-seating.svg" alt=""><svg class="floor-edge" aria-hidden="true"><path fill="none" stroke="#101415" stroke-width="7"/></svg></div>
@@ -19,14 +19,14 @@
     <div class="machine">
       <svg class="machine-frame" viewBox="0 0 800 1240" aria-hidden="true">
         <defs><linearGradient id="steel" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#464e50"/><stop offset=".28" stop-color="#c1c8c7"/><stop offset=".5" stop-color="#7c8586"/><stop offset=".8" stop-color="#c2c8c7"/><stop offset="1" stop-color="#596164"/></linearGradient></defs>
-        <g fill="#080b0d" opacity=".3"><ellipse cx="77" cy="1216" rx="38" ry="9"/><ellipse cx="723" cy="1216" rx="38" ry="9"/><ellipse cx="150" cy="1094" rx="24" ry="6"/><ellipse cx="650" cy="1094" rx="24" ry="6"/></g>
-        <!-- Two continuous side runners, with rear uprights and front legs. -->
+        <g fill="#080b0d" opacity=".3"><ellipse cx="-12" cy="1216" rx="38" ry="9"/><ellipse cx="812" cy="1216" rx="38" ry="9"/><ellipse cx="28" cy="1094" rx="24" ry="6"/><ellipse cx="772" cy="1094" rx="24" ry="6"/></g>
+        <!-- Vertical front and rear uprights joined by runners along the floor. -->
         <g fill="none" stroke="url(#steel)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M28 161L150 1077Q153 1089 144 1102L84 1204Q73 1224 69 1202L-12 933M772 161L650 1077Q647 1089 656 1102L716 1204Q727 1224 731 1202L812 933"/>
-          <path d="M13 1017L141 1039M787 1017L659 1039" stroke-width="5"/>
+          <path d="M28 161V1094L-6 1208Q-12 1220-12 1206V933M772 161V1094L806 1208Q812 1220 812 1206V933"/>
+          <path d="M-12 1017L28 1039M812 1017L772 1039" stroke-width="5"/>
         </g>
-        <g fill="#424c4b" stroke="#a2aaa5" stroke-width="1"><circle cx="13" cy="1017" r="4"/><circle cx="141" cy="1039" r="4"/><circle cx="787" cy="1017" r="4"/><circle cx="659" cy="1039" r="4"/></g>
-        <g stroke="#303735" stroke-width="9" stroke-linecap="round"><path d="M69 1206L75 1212M731 1206L725 1212"/></g>
+        <g fill="#424c4b" stroke="#a2aaa5" stroke-width="1"><circle cx="-12" cy="1017" r="4"/><circle cx="28" cy="1039" r="4"/><circle cx="812" cy="1017" r="4"/><circle cx="772" cy="1039" r="4"/></g>
+        <g stroke="#303735" stroke-width="9" stroke-linecap="round"><path d="M-12 1206V1212M812 1206V1212"/></g>
       </svg>
       <div class="court-stage">
       <canvas id="court" width="800" height="960" tabindex="0" aria-label="Basketball court. Mouse or touch: grab a ball, drag up towards a hoop and release. Keyboard: P1 uses A and D to aim, hold and release W to shoot. P2 uses left and right arrows to aim, hold and release up arrow to shoot. Touch: swipe a ball upwards."></canvas>
@@ -39,20 +39,21 @@
       <div class="frame-space" aria-hidden="true"></div>
     </div>
     <aside class="panel" aria-label="Game controls and statistics">
+      <div class="tv-screen">
       <div class="controls"><button id="start" type="button">Start round <span>↗</span></button><p id="message" role="status" aria-live="polite">Practice anytime. Start a round to keep score.</p></div>
       <div class="player-stats">
         <section><h2>P1 <span>LEFT HOOP</span></h2><dl><div><dt>Made / shots</dt><dd id="accuracy0">0/0 · 0%</dd></div><div><dt>Streak</dt><dd id="streak0">0</dd></div><div><dt>Best score</dt><dd id="best0">0</dd></div></dl></section>
         <section><h2>P2 <span>RIGHT HOOP</span></h2><dl><div><dt>Made / shots</dt><dd id="accuracy1">0/0 · 0%</dd></div><div><dt>Streak</dt><dd id="streak1">0</dd></div><div><dt>Best score</dt><dd id="best1">0</dd></div></dl></section>
       </div>
-      <div class="instructions">
-        <h2>HOW TO SHOOT</h2>
-        <p><strong>Mouse</strong> Grab a ball, drag up towards a hoop and release. Longer or quicker throws go further.</p>
-        <details><summary>Keyboard controls</summary><p> P1: <kbd>A</kbd> <kbd>D</kbd> aim, hold <kbd>W</kbd> to charge. P2: <kbd>←</kbd> <kbd>→</kbd> aim, hold <kbd>↑</kbd> to charge. Release to shoot.</p></details>
-        <p><strong>Touch</strong> Swipe a ball up towards a hoop and lift your finger to throw.</p>
-        <p class="note">The dotted arc previews the start of your throw. New balls return to different spots, so adjust your aim.</p>
-      </div>
       <div class="panel-footer"><button id="sound" class="quiet-button" type="button" aria-pressed="true">Sound on</button><span>30 SECOND ROUNDS</span></div>
-      <p class="rules">1 point per basket<br>20s left: double · 10s left: triple</p>
+      <p class="rules">1 point · 20s left: double · 10s left: triple</p>
+      <details class="instructions">
+        <summary>How to play</summary>
+        <p><strong>Mouse / touch</strong> Grab a ball, drag or swipe up towards a hoop and release. Longer or quicker throws go further.</p>
+        <p><strong>Keyboard</strong> P1: <kbd>A</kbd> <kbd>D</kbd> aim, hold <kbd>W</kbd> to charge. P2: <kbd>←</kbd> <kbd>→</kbd> aim, hold <kbd>↑</kbd> to charge. Release to shoot.</p>
+        <p class="note">The dotted arc previews the start of your throw. New balls return to different spots, so adjust your aim.</p>
+      </details>
+      </div>
     </aside>
     </div>
   </main>

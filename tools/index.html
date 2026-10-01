@@ -14,17 +14,17 @@
   <main class="card">
     <header><img src="assets/easilLogo.png" alt="" width="24" height="24"><h1>Design Utilities</h1></header>
     <nav aria-label="Design utilities">
-      <a href="shape-mask/"><img class="tool-icon" src="assets/icons/shape-mask.png" alt="" width="72" height="72"><span class="tool-name">Shape Mask<br>Converter</span><span class="chevron" aria-hidden="true"></span></a>
-      <a href="stretch-repeat/"><img class="tool-icon" src="assets/icons/stretch-repeat.png" alt="" width="72" height="72"><span class="tool-name">Stretch &amp; Repeat<br>Converter</span><span class="chevron" aria-hidden="true"></span></a>
-      <a href="repeat/"><img class="tool-icon" src="assets/icons/repeat.png" alt="" width="72" height="72"><span class="tool-name">Repeating<br>Shape Converter</span><span class="chevron" aria-hidden="true"></span></a>
-      <a href="stretchable/"><img class="tool-icon" src="assets/icons/stretchable.png" alt="" width="72" height="72"><span class="tool-name">Stretchable<br>Shape Converter</span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="shape-mask/"><img class="tool-icon" src="assets/icons/shape-mask.png" alt="" width="72" height="72"><span class="tool-copy"><span class="tool-name">Shape Mask<br>Converter</span><span class="tool-subtitle">Create image masks from vector shapes</span></span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="stretch-repeat/"><img class="tool-icon" src="assets/icons/stretch-repeat.png" alt="" width="72" height="72"><span class="tool-copy"><span class="tool-name">Stretch &amp; Repeat<br>Converter</span><span class="tool-subtitle">Repeat a centre section with fixed endcaps</span></span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="repeat/"><img class="tool-icon" src="assets/icons/repeat.png" alt="" width="72" height="72"><span class="tool-copy"><span class="tool-name">Repeating<br>Shape Converter</span><span class="tool-subtitle">Turn artwork into a horizontal repeat</span></span><span class="chevron" aria-hidden="true"></span></a>
+      <a href="stretchable/"><img class="tool-icon" src="assets/icons/stretchable.png" alt="" width="72" height="72"><span class="tool-copy"><span class="tool-name">Stretchable<br>Shape Converter</span><span class="tool-subtitle">Stretch artwork horizontally, vertically or both</span></span><span class="chevron" aria-hidden="true"></span></a>
     </nav>
   </main>
   <script>
     window.setTimeout(() => {
       const link = document.createElement('a');
       link.href = '../basketball/';
-      link.innerHTML = '<img class="tool-icon" src="assets/icons/basketball.png" alt="" width="72" height="72"><span class="tool-name">Secret Basketball Game</span><span class="chevron" aria-hidden="true"></span>';
+      link.innerHTML = '<img class="tool-icon" src="assets/icons/basketball.png" alt="" width="72" height="72"><span class="tool-copy"><span class="tool-name">Secret Basketball Game</span><span class="tool-subtitle">A hidden basketball mini-game</span></span><span class="chevron" aria-hidden="true"></span>';
       const reveal = document.createElement('div');
       reveal.className = 'secret-reveal';
       reveal.append(link);

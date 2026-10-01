@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 60 720 540">
+  <defs>
+    <style>.edge { fill: #3050b0; stroke: #172551; stroke-width: 6; stroke-dasharray: 12 6; }</style>
+    <linearGradient id="paint" gradientUnits="userSpaceOnUse" x1="270" y1="60" x2="510" y2="600" gradientTransform="translate(3 6)"><stop stop-color="#ed4b74"/><stop offset="1" stop-color="#f7ce69"/></linearGradient>
+    <linearGradient id="relative"><stop stop-color="#417deb"/><stop offset="1" stop-color="#25ca93"/></linearGradient>
+    <pattern id="texture" patternUnits="userSpaceOnUse" width="30" height="30" patternTransform="translate(6 9)"><circle cx="15" cy="15" r="9" fill="#203060"/></pattern>
+    <pattern id="boxed" width=".2" height=".2" viewBox="0 0 60 60"><rect width="30" height="60" fill="#ffffff"/></pattern>
+    <clipPath id="cut" clipPathUnits="objectBoundingBox"><rect x=".1" y=".1" width=".8" height=".8" rx=".1"/></clipPath>
+    <clipPath id="absoluteCut"><rect x="30" y="60" width="240" height="540"/></clipPath>
+    <mask id="fade" maskUnits="userSpaceOnUse" x="30" y="60" width="240" height="540"><rect x="30" y="60" width="240" height="540" fill="white"/><circle cx="100" cy="140" r="30" fill="black"/></mask>
+    <filter id="blur" filterUnits="userSpaceOnUse" x="0" y="0" width="800" height="700"><feGaussianBlur stdDeviation="3 6"/><feOffset dx="6" dy="9"/></filter>
+    <filter id="relativeBlur" primitiveUnits="objectBoundingBox"><feGaussianBlur stdDeviation=".01"/></filter>
+    <g id="detail"><circle cx="0" cy="0" r="12" fill="#abcdef"/></g>
+  </defs>
+  <g id="L" transform="translate(30 60)">
+    <rect class="edge" x="3" y="3" width="264" height="534" rx="18"/>
+    <g transform="translate(60 120) rotate(15)"><ellipse cx="30" cy="20" rx="42" ry="15" fill="url(#relative)"/><line x1="0" y1="90" x2="120" y2="120" stroke="#ffffff" stroke-width="9"/></g>
+    <rect x="30" y="210" width="180" height="90" fill="url(#texture)" clip-path="url(#cut)"/>
+    <polyline points="30 360 90 330 180 420" fill="none" stroke="#ffffff" stroke-width="6"/>
+    <use href="#detail" x="120" y="450" transform="scale(1.1)"/>
+  </g>
+  <g id="C"><path fill="url(#paint)" d="M270 60 h240 v540 h-240 v-180 q30 -30 0 -60 v-120 a30 30 0 0 0 0 -60 Z"/></g>
+  <g id="R">
+    <rect x="480" y="60" width="270" height="540" fill="#30a79c"/>
+    <circle cx="600" cy="180" r="60" fill="#eafaef" filter="url(#blur)"/>
+    <rect x="540" y="300" width="150" height="120" fill="url(#boxed)"/>
+    <svg x="540" y="450" width="120" height="120" viewBox="0 0 60 60"><path d="M0 0H60V60H0Z" fill="#3657a8"/><circle cx="30" cy="30" r="20" fill="#fff"/></svg>
+  </g>
+</svg>

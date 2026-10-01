@@ -6,7 +6,7 @@ The site is static and has no build step or production dependencies. Open
 For browser regression tests, install Playwright in a temporary directory:
 
 ```sh
-npm install --prefix /tmp/stretchrepeat-tests playwright
+npm install --prefix /tmp/stretchrepeat-tests playwright pngjs
 /tmp/stretchrepeat-tests/node_modules/.bin/playwright install chromium
 python3 -m http.server 8765
 ```
@@ -48,9 +48,46 @@ Path translations use the vendored svgpath 2.6.0 browser bundle (MIT); see
 `tools/stretch-repeat/vendor/svgpath.LICENSE`. No CDN or package installation is needed by site users.
 
 Detected repeat tile widths now default to the measured centre width minus exactly
-1 SVG unit. End cutoffs, centre artwork and height remain unchanged. Manual tile
-width edits are used as entered; the subtraction is not applied a second time.
+1 output SVG unit, after normalization. Uploads with either viewBox dimension
+above 240 are uniformly scaled to fit 240 × 240; smaller uploads are not enlarged.
+Geometry, transforms, strokes and user-space definitions are rescaled, while
+percentages and objectBoundingBox fractions retain their relative meaning.
+The measurements, preview slider and advanced settings use original SVG units;
+manual values are converted to output units without another overlap subtraction.
+For example, a 720-wide source uses scale 1/3: a detected 240-wide centre defaults
+to a displayed tile width of 237 (79 in the output), and a manual cutoff of 210
+becomes 70 in the output.
 
+Run `node tests/stretchrepeat-normalize.test.cjs` with the same server and
+Playwright setup. It checks large wide/tall inputs, unchanged small inputs,
+baked polygon/path geometry, gradients, patterns, filters, clips, masks,
+transformed primitives, nested viewports and uses, pixel parity with source
+artwork, and original-unit advanced settings including apply/reset.
+
+
+## Stretch & Repeat resource IDs
+
+Each conversion generates a random 128-bit namespace for the interior filter and
+source artwork IDs (patterns, gradients, clips, masks, paths and groups). Local
+`url(...)`, `href`, `xlink:href` and accessibility references are updated together.
+The namespace stays stable while changing settings, previewing and downloading;
+converting the same source again generates a new namespace.
+
+Keep the tested `PATTERN`, `REPEAT_X`, `L` and `R` import markers. The supplied
+app DOM shows the repeat handler renaming PATTERN when expanding it, whereas
+filter IDs remain untouched. Changing the pattern naming convention previously
+broke repetition, so this fix targets the confirmed shared-filter collision
+without changing those app markers.
+
+Run `node tests/stretchrepeat-ids.test.cjs` using the same server/browser setup
+and with `pngjs` installed alongside Playwright. It checks references, namespaces,
+source patterns also named PATTERN, stable rebuilds, and two inline elements with
+different cutoffs. A control with the old shared filter ID reproduces the wrong
+cutoff; unique filter IDs preserve each element's intended bounds.
+
+This prevents collisions between separately converted files. Reusing a single
+export still reuses its IDs; the host app must namespace resources per placed
+instance to guarantee isolation for copies of the same asset.
 
 ## Shape Mask selection
 
@@ -125,3 +162,4 @@ match. Shots reach hoop depth in roughly 0.9 seconds. Favicon PNGs at 32 and
 192 pixels extract the Copirite wordmark and pink ball from the supplied image.
 Bounce audio adds irregular broadband contact noise and compressed rubber-body
 resonance rather than relying on a clean sliding tone.
+

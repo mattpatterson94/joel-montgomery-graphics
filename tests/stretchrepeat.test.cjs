@@ -61,7 +61,7 @@ const fs = require('node:fs');
     const tags=root=>[...root.querySelectorAll('*')].map(el=>el.localName).join(',');
     const pa=[...a.querySelectorAll('polygon')],pb=[...b.querySelectorAll('polygon')];
     const geometry=pa.every((poly,i)=>[...poly.points].every((p,j)=>Math.abs(p.x-pb[i].points[j].x)<0.00001&&Math.abs(p.y-pb[i].points[j].y)<0.00001));
-    const filter=root=>new XMLSerializer().serializeToString(root.querySelector('filter'));
+    const filter=root=>{const copy=root.querySelector('filter').cloneNode(true);copy.setAttribute('id','interior');return new XMLSerializer().serializeToString(copy);};
     return {tags:tags(a)===tags(b),geometry,filter:filter(a)===filter(b)};
   },{working,output:result.output});
   assert.deepEqual(parity,{tags:true,geometry:true,filter:true});
@@ -89,7 +89,7 @@ const fs = require('node:fs');
     }
     return {defaults:data.defaults,rejected,output:StretchRepeat.build(data,data.defaults)};
   });
-  assert.deepEqual(cases.defaults,{tile:119,start:80,left:80,right:80});assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('#123456'));
+  for (const [key,value] of Object.entries({tile:120*240/280-1,start:80*240/280,left:80*240/280,right:80*240/280})) assert.ok(Math.abs(cases.defaults[key]-value)<.00001);assert.ok(cases.rejected.every(Boolean));assert.ok(cases.output.includes('#123456'));
   const downloadPromise=page.waitForEvent('download');await page.locator('#download').click();const download=await downloadPromise;assert.equal(download.suggestedFilename(),'demo-repeat.svg');
   await page.goto('http://localhost:8765/stretchrepeat.html');
   await page.waitForURL('**/tools/stretch-repeat/');
@@ -105,3 +105,4 @@ const fs = require('node:fs');
   assert.deepEqual(errors,[]);console.log('PASS: geometry, tile boundaries, colours, upload, validation, download and mobile layout.');
   await browser.close();
 })().catch(error=>{console.error(error);process.exit(1);});
+

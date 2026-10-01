@@ -65,21 +65,29 @@
       await loaded;
       const live = frame.contentDocument.importNode(root, true);
       frame.contentDocument.body.append(live);
-      const parts = {}, bounds = {};
-      for (const id of ['L','C','R']) {
-        const group = live.querySelector(`[id="${id}"]`);
-        const matrix = live.getScreenCTM().inverse().multiply(group.getScreenCTM());
-        if (Math.abs(matrix.b) > 1e-7 || Math.abs(matrix.c) > 1e-7) throw new Error('Expand rotated or skewed section transforms before exporting so the tile bounds are unambiguous.');
-        const box = group.getBBox();
-        const xs = [box.x, box.x + box.width].map(x => matrix.a*x + matrix.e - vb[0]);
-        bounds[id] = {x:Math.min(...xs), width:Math.abs(xs[1]-xs[0])};
-        if (!box.width || !box.height) throw new Error(`${id} must contain visible artwork with a width and height.`);
-        parts[id] = {group, matrix};
-      }
+      const originalSize = {width:vb[2], height:vb[3]};
+      const scale = Math.min(1, 240 / Math.max(vb[2], vb[3]));
       // Freeze Illustrator classes and inherited presentation before rearranging groups.
       for (const el of [live, ...live.querySelectorAll('*')]) {
         if (['style','defs','title','desc'].includes(el.localName)) continue;
         const computed = frame.contentWindow.getComputedStyle(el);
+        if (scale < 1) {
+          // CSS geometry must be frozen too before removing Illustrator stylesheets.
+          const geometry = {rect:'x y width height rx ry',circle:'cx cy r',ellipse:'cx cy rx ry',use:'x y width height'}[el.localName];
+          for (const name of (geometry || '').split(' ').filter(Boolean)) {
+            const value = computed.getPropertyValue(name);
+            if (value && value !== 'auto') el.setAttribute(name, value);
+            el.style.removeProperty(name);
+          }
+          if (el.localName === 'path') {
+            const path = computed.getPropertyValue('d').match(/^path\(["'](.*)["']\)$/);
+            if (path) el.setAttribute('d', path[1]);
+            el.style.removeProperty('d');
+          }
+          if (computed.transform !== 'none' && el.style.transform) {
+            el.style.transform = computed.transform; el.style.transformOrigin = computed.transformOrigin;
+          }
+        }
         if (computed.transform !== 'none' && !el.hasAttribute('transform')) {
           el.style.transform = computed.transform; el.style.transformOrigin = computed.transformOrigin;
         }
@@ -91,6 +99,20 @@
         }
       }
       for (const style of live.querySelectorAll('style')) style.remove();
+      normaliseSVGUnits(live, scale);
+      for (let i = 0; i < vb.length; i++) vb[i] *= scale;
+      const parts = {}, bounds = {};
+      for (const id of ['L','C','R']) {
+        const group = live.querySelector(`[id="${id}"]`);
+        const matrix = live.getScreenCTM().inverse().multiply(group.getScreenCTM());
+        if (Math.abs(matrix.b) > 1e-7 || Math.abs(matrix.c) > 1e-7) throw new Error('Expand rotated or skewed section transforms before exporting so the tile bounds are unambiguous.');
+        const box = group.getBBox();
+        const xs = [box.x, box.x + box.width].map(x => matrix.a*x + matrix.e - vb[0]);
+        bounds[id] = {x:Math.min(...xs), width:Math.abs(xs[1]-xs[0])};
+        if (!box.width || !box.height) throw new Error(`${id} must contain visible artwork with a width and height.`);
+        parts[id] = {group, matrix};
+      }
+
       const definitions = [...live.children].filter(el => el.localName === 'defs').map(el => el.cloneNode(true));
       const cloned = {};
       for (const id of ['L','C','R']) {
@@ -103,7 +125,7 @@
       if (bounds.C.width <= 1) throw new Error('The detected centre width must be greater than 1 SVG unit to subtract 1 from the repeat tile width.');
       const left = bounds.C.x, right = vb[2] - bounds.C.x - bounds.C.width;
       if (left < -0.01 || right < -0.01) throw new Error('The centre must fit horizontally within the SVG artboard.');
-      return {width:vb[2], height:vb[3], definitions, parts:cloned, bounds,
+      return {width:vb[2], height:vb[3], originalSize, scale, definitions, parts:cloned, bounds,
         defaults:{tile:bounds.C.width - 1, start:bounds.C.x, left:Math.max(0,left), right:Math.max(0,right)}};
     } finally { frame.remove(); }
   }
@@ -187,19 +209,19 @@
     }
   }
   function status(message,error=false){$('status').textContent=message;$('status').classList.toggle('error',error);}
-  function fillSettings(){for(const [id,key] of [['tile-width','tile'],['tile-start','start'],['left-cutoff','left'],['right-cutoff','right']]) $(id).value=number(settings[key]);}
+  function fillSettings(){for(const [id,key] of [['tile-width','tile'],['tile-start','start'],['left-cutoff','left'],['right-cutoff','right']]) $(id).value=number(settings[key]/model.scale);}
   function refresh() {
     const output=build(model,settings);
     $('output-code').value=output;
-    const width=Number($('preview-width').value);
+    const width=Number($('preview-width').value)*model.scale;
     const preview=build(model,settings,width,$('diagnostic').checked,true);
     const nextURL=URL.createObjectURL(new Blob([preview],{type:'image/svg+xml'}));
     $('preview').src=nextURL;if(previewURL) URL.revokeObjectURL(previewURL);previewURL=nextURL;
-    $('width-label').textContent=`${number(width)} × ${number(model.height)}`;
+    $('width-label').textContent=`${number(width/model.scale)} × ${number(model.originalSize.height)}`;
     const overlapL=model.bounds.L.x+model.bounds.L.width-settings.left;
     const overlapR=model.width-settings.right-model.bounds.R.x;
     $('measurements').replaceChildren();
-    for(const [label,value] of [['Original size',`${number(model.width)} × ${number(model.height)}`],['Repeat width',number(settings.tile)],['Left overlap',displayNumber(overlapL)],['Right overlap',displayNumber(overlapR)]]) {const item=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;item.append(dt,dd);$('measurements').append(item);}
+    for(const [label,value] of [['Original size',`${number(model.originalSize.width)} × ${number(model.originalSize.height)}`],['Repeat width',number(settings.tile/model.scale)],['Left overlap',displayNumber(overlapL/model.scale)],['Right overlap',displayNumber(overlapR/model.scale)]]) {const item=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=value;item.append(dt,dd);$('measurements').append(item);}
     if(overlapL<0 || overlapR<0) status('Converted. A negative overlap indicates a gap: adjust the cutoffs or extend the cap artwork.',true);
   }
   async function convert(source,name='element') {
@@ -208,9 +230,9 @@
       const next=await inspect(source);if(token!==generation)return;
       model=next;settings={...next.defaults};filename=name.replace(/\.svg$/i,'');
       fillSettings();$('settings-error').textContent='';$('diagnostic').checked=false;
-      $('preview-width').min=number(Math.max(settings.left+settings.right+1,model.width*.75));
-      $('preview-width').max=number(model.width*4);$('preview-width').value=number(model.width*2);
-      status(`${name.replace(/\.svg$/i,'')}.svg · Converted successfully`);refresh();$('result').hidden=false;
+      $('preview-width').min=number(Math.max(settings.left+settings.right+model.scale,model.width*.75)/model.scale);
+      $('preview-width').max=number(model.originalSize.width*4);$('preview-width').value=number(model.originalSize.width*2);
+      status(`${name.replace(/\.svg$/i,'')}.svg · Converted successfully${model.scale < 1 ? ` · Scaled from ${displayNumber(model.originalSize.width)} × ${displayNumber(model.originalSize.height)} to ${displayNumber(model.width)} × ${displayNumber(model.height)}` : ''}`);refresh();$('result').hidden=false;
     } catch(error){if(token===generation){model=null;status(error.message,true);}}
   }
   async function upload(files) {
@@ -229,11 +251,11 @@
   $('preview-width').addEventListener('input',()=>{if(model) refresh();});
   $('diagnostic').addEventListener('change',()=>{if(model) refresh();});
   $('apply-settings').addEventListener('click',()=>{
-    const next={tile:Number($('tile-width').value),start:Number($('tile-start').value),left:Number($('left-cutoff').value),right:Number($('right-cutoff').value)};
+    const next={tile:Number($('tile-width').value)*model.scale,start:Number($('tile-start').value)*model.scale,left:Number($('left-cutoff').value)*model.scale,right:Number($('right-cutoff').value)*model.scale};
     if([...document.querySelectorAll('.fields input')].some(input=>input.value.trim()==='') || !Object.values(next).every(Number.isFinite) || next.tile<=0 || next.left<0 || next.right<0 || next.left+next.right>=model.width || model.width*4/next.tile>2000) {$('settings-error').textContent='Enter a positive tile width and non-negative cutoffs. Cutoffs must leave a visible centre; the preview supports up to 2,000 tiles.';return;}
-    settings=next;$('settings-error').textContent='';$('preview-width').min=number(Math.max(next.left+next.right+1,model.width*.75));status('Settings updated.');refresh();
+    settings=next;$('settings-error').textContent='';$('preview-width').min=number(Math.max(next.left+next.right+model.scale,model.width*.75)/model.scale);status('Settings updated.');refresh();
   });
-  $('reset-settings').addEventListener('click',()=>{settings={...model.defaults};fillSettings();$('settings-error').textContent='';$('preview-width').min=number(Math.max(settings.left+settings.right+1,model.width*.75));status('Detected settings restored.');refresh();});
+  $('reset-settings').addEventListener('click',()=>{settings={...model.defaults};fillSettings();$('settings-error').textContent='';$('preview-width').min=number(Math.max(settings.left+settings.right+model.scale,model.width*.75)/model.scale);status('Detected settings restored.');refresh();});
   $('download').addEventListener('click',()=>{const url=URL.createObjectURL(new Blob([$('output-code').value],{type:'image/svg+xml'}));const a=document.createElement('a');a.href=url;a.download=`${filename}-repeat.svg`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
   $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output-code').value);$('copy').textContent='Copied!';setTimeout(()=>$('copy').textContent='Copy SVG code',1500);}catch{$('output-code').closest('details').open=true;$('output-code').select();status('Select and copy the output code below.');}});
   const tutorial = $('how-to-dialog');

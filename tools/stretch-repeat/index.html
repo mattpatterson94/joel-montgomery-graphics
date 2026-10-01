@@ -10,7 +10,8 @@
   <link rel="icon" href="../assets/favicon.ico">
   <link rel="stylesheet" href="styles.css?v=5">
   <script src="vendor/svgpath.min.js" defer></script>
-  <script src="script.js?v=4" defer></script>
+  <script src="normalize-svg.js?v=1" defer></script>
+  <script src="script.js?v=5" defer></script>
 </head>
 <body>
   <main class="container">
@@ -27,7 +28,7 @@
         <input id="preview-width" type="range" step="0.1">
         <p class="hint">Preview width and section colours do not affect your download.</p>
         <dl id="measurements" class="measurements"></dl>
-        <details id="settings"><summary>Adjust settings</summary><p class="hint">Values use the SVG’s coordinate units. Cutoffs reserve space at each end; smaller cutoffs reveal more repeat beneath the caps.</p>
+        <details id="settings"><summary>Adjust settings</summary><p class="hint">Measurements and settings use the original SVG’s units. Downloads are scaled to fit within 240 × 240. Cutoffs reserve space at each end; smaller cutoffs reveal more repeat beneath the caps.</p>
           <div class="fields">
             <label>Repeat tile width<input id="tile-width" type="number" step="any" min="0.001"></label>
             <label>Center starts at X<input id="tile-start" type="number" step="any"></label>

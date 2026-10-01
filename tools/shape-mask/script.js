@@ -88,6 +88,7 @@
         el.removeAttribute('data-mask-shape');
       }
       live.querySelectorAll('style').forEach(el => el.remove());
+      const sizing = fitSVGTo240(live);
       const shapes = [];
       for (const shape of live.querySelectorAll(shapeSelector)) {
         if (shape.closest(definitionSelector)) continue;
@@ -116,7 +117,7 @@
       }
       if (!shapes.length) throw new Error('No selectable vector shapes found. Outline text and expand symbols or linked copies before exporting.');
       const hasOtherArtwork = [...live.querySelectorAll('use,line')].some(el => !el.closest(definitionSelector));
-      return {root:live.cloneNode(true), shapes, hasOtherArtwork};
+      return {root:live.cloneNode(true), shapes, hasOtherArtwork, ...sizing};
     } finally {frame.remove();}
   }
   function ancestors(el, root) {
@@ -243,7 +244,7 @@
       button.addEventListener('click',()=>toggle(item.index));$('shape-list').append(button);
     }
     live.addEventListener('click',event=>{const shape=event.target.closest('[data-mask-shape]');if(shape)toggle(Number(shape.getAttribute('data-mask-shape')));});
-    $('editor').hidden=false;refresh();status(`${name} · Choose shapes in the preview or list.`);
+    $('editor').hidden=false;refresh();status(`${name} · Choose shapes in the preview or list.${model.scale < 1 ? ` Output: ${displayNumber(model.width)} × ${displayNumber(model.height)}.` : ""}`);
   }
   function setMode(value){
     advanced=value;++generation;model=null;selected.clear();lastThumbnail=null;$('download-thumbnail').hidden=true;
@@ -270,7 +271,7 @@
         if(mode){await showEditor(data,file.name,token);return;}
         if(data.shapes.length!==1 || data.hasOtherArtwork)throw new Error('Use Advanced Mode to choose which shapes become masks.');
         await downloadPair(data,new Set([data.shapes[0].index]),file.name.replace(/\.svg$/i,''),token);
-        messages.push(`${file.name} · SVG and PNG downloads started`);
+        messages.push(`${file.name} · SVG and PNG downloads started${data.scale < 1 ? ` · Output: ${displayNumber(data.width)} × ${displayNumber(data.height)}` : ""}`);
       }catch(error){failed=true;messages.push(`${file.name} · ${error.message}`);}
     }
     if(token===generation)status(messages.join('\n'),failed);
@@ -294,3 +295,4 @@
   $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output').value);status('SVG code copied.');}catch{$('output').closest('details').open=true;$('output').select();status('Select and copy the output code below.');}});
   window.ShapeMask={inspect,build,thumbnail};
 })();
+

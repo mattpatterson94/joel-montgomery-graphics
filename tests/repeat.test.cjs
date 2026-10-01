@@ -48,7 +48,8 @@ const assert=require('node:assert/strict');
   await page.goto(`http://localhost:8765/tools/${name}/`);
   assert.equal(await page.locator('nav a').count(),1);assert.equal(await page.locator('nav a').getAttribute('href'),'../');
  }
- await page.goto('http://localhost:8765/tools/');assert.equal(await page.locator('nav a').count(),3);
+ await page.goto('http://localhost:8765/tools/');assert.equal(await page.locator('nav a:visible').count(),4);
  assert.deepEqual(errors,[]);console.log('PASS: complex artwork pixels, app-style repeats, reserved IDs, download, unsafe input, mobile and navigation',result.diffs);
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+

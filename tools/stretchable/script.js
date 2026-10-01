@@ -37,7 +37,8 @@
     const loaded=new Promise(resolve=>frame.addEventListener('load',resolve,{once:true}));
     frame.srcdoc='<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'"><body></body>';
     document.body.append(frame);
-    const scope=new paper.PaperScope();scope.setup(new scope.Size(vb[2],vb[3]));
+    const scale=Math.min(1,240/Math.max(vb[2],vb[3]));
+    const scope=new paper.PaperScope();scope.setup(new scope.Size(vb[2]*scale,vb[3]*scale));
     try{
       await loaded;const live=frame.contentDocument.importNode(root,true);frame.contentDocument.body.append(live);
       const toRoot=live.getScreenCTM().inverse();let count=0,segments=0;
@@ -71,7 +72,7 @@
         if(path instanceof scope.Shape)path=path.toPath(false);
         if(!(path instanceof scope.PathItem))throw new Error('Could not convert a shape into a vector path.');
         const matrix=toRoot.multiply(el.getScreenCTM());
-        path.transform(new scope.Matrix(matrix.a,matrix.b,matrix.c,matrix.d,matrix.e-vb[0],matrix.f-vb[1]));
+        path.transform(new scope.Matrix(matrix.a*scale,matrix.b*scale,matrix.c*scale,matrix.d*scale,(matrix.e-vb[0])*scale,(matrix.f-vb[1])*scale));
         path.fillRule=style.fillRule;
         // SVG fills implicitly close open subpaths. Close them before intersections.
         const parts=path.children||[path];for(const part of parts)part.closed=true;
@@ -81,7 +82,7 @@
       }
       const artwork=read(live);
       if(!artwork||!count)throw new Error('No visible filled vector shapes found.');
-      return {scope,artwork,width:vb[2],height:vb[3],cache:new Map()};
+      return {scope,artwork,width:vb[2]*scale,height:vb[3]*scale,scale,originalSize:{width:vb[2],height:vb[3]},cache:new Map()};
     }catch(error){scope.project.remove();throw error;}finally{frame.remove();}
   }
   function sections(data,direction){
@@ -143,7 +144,7 @@
     const width=model.width*Number($('preview-width').value),height=model.height*Number($('preview-height').value);
     const url=URL.createObjectURL(new Blob([build(model,sliced,width,height,$('guides').checked)],{type:'image/svg+xml'}));
     $('preview').src=url;if(previewURL)URL.revokeObjectURL(previewURL);previewURL=url;
-    $('width-label').textContent=number(width);$('height-label').textContent=number(height);
+    $('width-label').textContent=number(width/model.scale);$('height-label').textContent=number(height/model.scale);
     $('output').value=build(model,sliced);$('sections').textContent=`Sections: ${sliced.map(part=>part.id).join(' / ')}`;
   }
   function convertDirection(){
@@ -151,7 +152,7 @@
     $('result').hidden=true;sliced=null;
     const direction=mode();$('preview-width').value=$('preview-height').value=1;
     $('preview-width').disabled=direction==='vertical';$('preview-height').disabled=direction==='horizontal';
-    try{sliced=cut(model,direction);refresh();$('result').hidden=false;status('Converted. Resize the preview to check the result.');}
+    try{sliced=cut(model,direction);refresh();$('result').hidden=false;status(model.scale < 1 ? `Converted. Output: ${number(model.width)} × ${number(model.height)}. Preview dimensions use original SVG units.` : 'Converted. Resize the preview to check the result.');}
     catch(error){status(error.message,true);}
   }
   async function upload(files){
@@ -183,3 +184,4 @@
   $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output').value);status('SVG code copied.');}catch{$('output').closest('details').open=true;$('output').select();status('Select and copy the output code below.');}});
   window.StretchableCreator={inspect,cut,build};
 })();
+

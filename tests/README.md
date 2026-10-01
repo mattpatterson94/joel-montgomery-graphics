@@ -163,3 +163,22 @@ match. Shots reach hoop depth in roughly 0.9 seconds. Favicon PNGs at 32 and
 Bounce audio adds irregular broadband contact noise and compressed rubber-body
 resonance rather than relying on a clean sliding tone.
 
+
+
+## Size limits across converters
+
+Shape Mask, Repeating Shape and Stretchable Shape exports now use the same
+maximum artboard size as Stretch & Repeat: uniformly fit within 240 × 240,
+without enlarging smaller sources. Paths, primitives, strokes, transforms,
+viewBoxes, patterns and user-space definitions are scaled. Relative dimensions
+remain relative. Mask image bounds are measured after normalization, and
+stretchable artwork is normalized before cutting it into equal thirds.
+
+The shared SVG normalizer is `tools/shared/normalize-svg.js`. The earlier
+`tools/stretch-repeat/normalize-svg.js` is retained for cached older pages.
+The stretchable converter scales its Paper.js geometry directly.
+
+Run `node tests/converter-sizing.test.cjs` with the same local server and
+Playwright setup. Checks cover large wide/tall sources, unchanged smaller
+sources, rendering parity, mask image bounds, PNG bottom-edge coverage,
+repeat tile sizes and all three stretchable slicing modes.

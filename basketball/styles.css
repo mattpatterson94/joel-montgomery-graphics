@@ -54,19 +54,22 @@ main{overflow-x:clip}
 .instructions>summary{cursor:pointer;font-size:12px;color:#e2d5df}
 .instructions>summary:focus-visible{outline:2px solid white;outline-offset:4px}
 @media(min-width:1001px){
+ body{--scene-scale:.8}
  main{width:100%;padding:24px}
  header{margin-left:0;margin-right:0}
  .game-layout{display:block}
- .machine{--machine-width:min(64vw,calc((100svh - 85px)/1.25),1100px);justify-self:start;width:var(--machine-width);max-width:none;margin-left:calc(43vw - var(--machine-width)/2 - 24px)}
+ .machine{--machine-base:min(64vw,calc((100svh - 85px)/1.25),1100px);--machine-width:calc(var(--machine-base)*var(--scene-scale));justify-self:start;width:var(--machine-width);max-width:none;margin-left:calc(43vw - var(--machine-width)/2 - 24px)}
+ .round-status{font-size:calc(10px*var(--scene-scale));letter-spacing:calc(1.7px*var(--scene-scale));gap:calc(14px*var(--scene-scale))}
  .wall-tv{display:none}
  /* The whole TV scales with the room and clears the projected side net.
     Its controls stay within the visible screen when the TV extends offscreen. */
  .panel{--tv-left:calc(var(--court-right) + var(--court-width)*.075);position:absolute;left:var(--tv-left);top:calc(var(--court-top) + var(--court-width)*.055);
-  width:calc(var(--court-width)*.92);aspect-ratio:16/9;min-height:252px;padding:0;
-  border:5px solid #101214;border-bottom-width:9px;border-radius:4px;
+  width:calc(var(--court-width)*.92);aspect-ratio:16/9;min-height:calc(252px*var(--scene-scale));padding:0;
+  border:calc(5px*var(--scene-scale)) solid #101214;border-bottom-width:calc(9px*var(--scene-scale));border-radius:4px;
   background:linear-gradient(155deg,#263336,#10191d 70%);box-shadow:4px 6px 14px #0008}
- .panel::after{content:"";position:absolute;left:53%;top:calc(100% + 9px);width:40px;height:120px;border-left:2px solid #090b0c;border-radius:0 0 0 80%;transform:rotate(-15deg);pointer-events:none}
- .tv-screen{width:min(100%,540px,calc(100vw - var(--tv-left) - 28px));min-width:0;height:100%;max-height:max(238px,calc(var(--court-width)*.92*9/16 - 14px));overflow-y:auto;padding:14px 16px;scrollbar-width:thin;scrollbar-color:#5d686b #142024}
+ .panel::after{content:"";position:absolute;left:53%;top:calc(100% + 9px*var(--scene-scale));width:calc(40px*var(--scene-scale));height:calc(120px*var(--scene-scale));border-left:2px solid #090b0c;border-radius:0 0 0 80%;transform:rotate(-15deg);pointer-events:none}
+ .tv-screen{width:min(100%,calc(540px*var(--scene-scale)),calc(100vw - var(--tv-left) - 28px));min-width:0;height:100%;max-height:max(calc(238px*var(--scene-scale)),calc(var(--court-width)*.92*9/16 - 14px*var(--scene-scale)));overflow-y:auto;padding:calc(14px*var(--scene-scale)) calc(16px*var(--scene-scale));scrollbar-width:thin;scrollbar-color:#5d686b #142024}
+ .tv-ui{zoom:var(--scene-scale)}
  .controls{grid-template-columns:142px 1fr;gap:14px;align-items:center}
  .controls button{padding:11px 14px;font-size:13px}
  .controls p{font-size:11px;min-height:0;line-height:1.4}
@@ -84,8 +87,12 @@ main{overflow-x:clip}
  .instructions p{margin:7px 0;line-height:1.5}
 }
 @media(min-width:1001px) and (max-width:1250px){
- .machine{--machine-width:min(calc(100vw - 490px),calc((100svh - 85px)/1.25));margin-left:calc(9vw - 24px)}
- .tv-screen{padding:12px}
+ .machine{--machine-base:min(calc(100vw - 490px),calc((100svh - 85px)/1.25));margin-left:calc(9vw - 24px + var(--machine-base)*.1)}
+ .tv-screen{padding:calc(12px*var(--scene-scale))}
  .controls{grid-template-columns:142px 1fr;gap:10px}
  .player-stats{gap:18px}
 }
+
+.sound-controls{display:flex;gap:8px;align-items:center}
+#test-sound{display:none}
+@media(pointer:coarse){#test-sound{display:inline-block}}

@@ -1,11 +1,13 @@
+import {IOSAudioChannel} from './ios-audio.mjs?v=19';
 // Recorded office-machine contacts, with procedural net/board sounds and loading fallback.
 const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact']};
 const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
 export class CourtAudio {
- constructor(context=null){this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
+ constructor(context=null){this.channel=new IOSAudioChannel();this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};}
  unlock(fromGesture=false){
   if(!this.enabled)return;
   try{
+   if(fromGesture&&typeof this.context?.startRendering!=='function'){try{this.channel.start();}catch{}}
    // Request media playback on supporting phones, instead of the default
    // ambient session that can be silenced by the iPhone's silent switch.
    if(fromGesture&&globalThis.navigator?.audioSession){
@@ -26,6 +28,22 @@ export class CourtAudio {
    }
    this.loadSamples();
   }catch{}
+ }
+ setEnabled(enabled){
+  this.enabled=enabled;
+  if(enabled)this.unlock(true);else this.channel.stop();
+ }
+ pause(){this.channel.stop();}
+ async test(){
+  this.setEnabled(true);
+  if(!this.context)throw new Error('Audio is unavailable in this browser.');
+  let timer;
+  try{
+   await Promise.race([Promise.all([this.context.resume(),this.channel.ready]),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Sound is blocked. Try tapping Start round, then Test sound.')),1800);})]);
+   if(this.channel.error)throw new Error('Audio playback was blocked. Tap Test sound again.');
+   if(this.context.state!=='running')throw new Error('Sound is blocked. Try tapping Test sound again.');
+   this.play('rim',1);
+  }finally{clearTimeout(timer);}
  }
  async loadSamples(){
   if(!this.context)return;
@@ -51,7 +69,7 @@ export class CourtAudio {
   for(let i=0;i<data.length;i++){const white=Math.random()*2-1;data[i]=white*.7+previous*.3;previous=white;}
  }
  play(type,strength=.7,pan=0){
-  if(!this.enabled)return;
+  if(!this.enabled||(globalThis.document?.hidden&&typeof this.context?.startRendering!=='function'))return;
   this.unlock();if(!this.context)return;
   // Don't accumulate delayed effects while a phone has blocked audio.
   if(this.context.state!=='running'&&typeof this.context.startRendering!=='function')return;

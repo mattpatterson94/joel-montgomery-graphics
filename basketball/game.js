@@ -6,7 +6,7 @@ import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
 import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
 import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
-import {CourtAudio} from './sound.mjs?v=18';
+import {CourtAudio} from './sound.mjs?v=19';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -55,8 +55,13 @@ const netReactions=[null,null],rackOwners=[{},{}];
 let hover=null;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 soundButton.addEventListener('click',()=>{
- audio.enabled=!audio.enabled;audio.unlock(true);soundButton.textContent=audio.enabled?'Sound on':'Sound off';
+ audio.setEnabled(!audio.enabled);soundButton.textContent=audio.enabled?'Sound on':'Sound off';
  soundButton.setAttribute('aria-pressed',String(audio.enabled));
+});
+document.querySelector('#test-sound').addEventListener('click',async()=>{
+ const result=audio.test();soundButton.textContent='Sound on';soundButton.setAttribute('aria-pressed','true');
+ try{await result;message.textContent='Playing a test bounce. If silent, check your media volume and audio output.';}
+ catch(error){message.textContent=error.message;}
 });
 function stats(){statsEls.forEach((els,i)=>{els.accuracy.textContent=`${makes[i]}/${attempts[i]} · ${attempts[i]?Math.round(makes[i]/attempts[i]*100):0}%`;els.streak.textContent=String(streaks[i]);els.best.textContent=String(best[i]);});}
 stats();
@@ -168,8 +173,9 @@ window.addEventListener('keyup',e=>{
  keys.delete(key);
 });
 window.addEventListener('keydown',e=>{if(e.key==='Tab')canvas.classList.remove('pointer-focus');});
-window.addEventListener('blur',()=>{keys.clear();drags.clear();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();drags.clear();balls=[];}sync(performance.now());});
+window.addEventListener('blur',()=>{audio.pause();keys.clear();drags.clear();});
+window.addEventListener('pagehide',()=>audio.pause());
+document.addEventListener('visibilitychange',()=>{if(document.hidden){audio.pause();keys.clear();drags.clear();balls=[];}sync(performance.now());});
 function drawPreview(sample){
  const points=previewArc(sample);
  ctx.save();

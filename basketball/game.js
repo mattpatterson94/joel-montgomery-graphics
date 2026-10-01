@@ -1,11 +1,11 @@
-import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y, carpetHeight} from './physics.mjs?v=11';
-import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=11';
-import {drawBall as drawSphere} from './ball-renderer.mjs?v=11';
-import {drawSensorArm} from './sensor.mjs?v=11';
-import {drawFabricReturn} from './fabric.mjs?v=11';
-import {drawSideNet} from './side-net.mjs?v=11';
-import {drawNet} from './net.mjs?v=11';
-import {CourtAudio} from './sound.mjs?v=11';
+import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y, carpetHeight} from './physics.mjs?v=13';
+import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=13';
+import {drawBall as drawSphere} from './ball-renderer.mjs?v=13';
+import {drawSensorArm} from './sensor.mjs?v=13';
+import {drawFabricReturn} from './fabric.mjs?v=13';
+import {drawSideNet} from './side-net.mjs?v=13';
+import {drawNet} from './net.mjs?v=13';
+import {CourtAudio} from './sound.mjs?v=13';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -73,19 +73,24 @@ function backboard(){
   b.save();b.beginPath();b.roundRect(36,24,728,432,[65,65,0,0]);b.clip();
   const sourceScale=artwork.naturalWidth/1920;
   b.drawImage(artwork,155*sourceScale,213*sourceScale,746*sourceScale,443*sourceScale,36,24,728,432);b.restore();
+  // Cover the pale antialiased crop edge around the black header.
+  b.beginPath();b.roundRect(36,24,728,432,[65,65,0,0]);b.strokeStyle='#101213';b.lineWidth=2.5;b.stroke();
  }
  drawFabricReturn(b);
  for(const flip of [1,-1]){
   b.save();b.translate(flip===1?0:800,0);b.scale(flip,1);
   drawSideNet(b);b.restore();
  }
- path(b,[[26,935],[774,935]],null,'#535b5d',10);
- path(b,[[26,932],[774,932]],null,'#c0c7c7',3);
- for(const x of [26,774]){b.fillStyle='#25292c';b.fillRect(x-9,926,18,15);}
- // A fabric apron hides the supports where they attach to the ball return.
- b.beginPath();b.moveTo(26,937);b.quadraticCurveTo(400,964,774,937);
- b.lineTo(756,950);b.quadraticCurveTo(400,973,44,950);b.closePath();b.fillStyle='#0a0d10';b.fill();
- b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],918);b.fillText('P2',HOOPS[1],918);
+ // The front catcher is a deep fabric sling between two rails.
+ b.beginPath();b.moveTo(26,876);b.quadraticCurveTo(400,938,774,876);
+ b.lineTo(774,943);b.quadraticCurveTo(400,980,26,943);b.closePath();
+ const pocket=b.createLinearGradient(0,875,0,960);pocket.addColorStop(0,'#373b39');pocket.addColorStop(.5,'#111615');pocket.addColorStop(1,'#070b0b');b.fillStyle=pocket;b.fill();
+ for(const y of [881,945]){
+  b.beginPath();b.moveTo(25,y+12);b.quadraticCurveTo(17,y,40,y);b.lineTo(760,y);b.quadraticCurveTo(783,y,775,y+12);
+  b.strokeStyle='#4b5352';b.lineWidth=10;b.stroke();b.strokeStyle='#aeb9b7';b.lineWidth=3;b.stroke();
+ }
+ for(const x of [26,774]){path(b,[[x,891],[x,944]],null,'#87928e',7);}
+ b.font='700 12px Arial';b.textAlign='center';b.fillStyle='#c1b5c1';b.fillText('P1',HOOPS[0],929);b.fillText('P2',HOOPS[1],929);
 }
 artwork.addEventListener('load',backboard);
 artwork.addEventListener('error',()=>{message.textContent='Backboard image could not load. Reload the page to try again.';});
@@ -208,10 +213,10 @@ function frame(now){
     makes[item.lane]++;streaks[item.lane]++;stats();
    }
    item.judged=true;audio.play(item.entry.swish?'swish':'net',.8,lane?.5:-.5);
-   if(!reducedMotion)netReactions[lane]={time:now,ball:item};
+   if(!reducedMotion&&netReactions[lane]?.ball!==item)netReactions[lane]={time:now,ball:item};
    flashes.push({lane,time:now,label:value?`+${value}${item.rimHits||item.bankHits?'':' SWISH'}`:'NICE!',good:true});
   }
-  if(!item.judged&&(item.landed||item.age>2.5)){
+  if(!item.judged&&(item.landed||item.escaped||item.age>4.5)){
    item.judged=true;if(running&&item.round===round){streaks[item.lane]=0;stats();}
    flashes.push({lane:item.lane,time:now,label:item.rimHits?'RIM OUT':item.z<.85?'SHORT':'MISSED',good:false});
   }

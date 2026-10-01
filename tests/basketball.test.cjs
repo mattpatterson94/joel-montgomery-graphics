@@ -13,7 +13,11 @@ const {chromium}=require('playwright');
  assert.equal(pointsAt(30),1);assert.equal(pointsAt(20.001),1);assert.equal(pointsAt(20),2);assert.equal(pointsAt(10),3);assert.equal(pointsAt(0),0);assert.equal(remaining(30000,31000),0);
  // Each scored ball triggers one sensor hit and one quiet ramp return.
  {const ball=makeBall(0,aimFor(0,HOOPS[0]),280,1),events=[];
-  for(let i=0;i<600;i++){stepBall(ball,1/120);events.push(...ball.events.map(event=>event.type));}
+  for(let i=0;i<600;i++){
+   const returning=ball.landed,previousZ=ball.z;
+   stepBall(ball,1/120);events.push(...ball.events.map(event=>event.type));
+   if(returning)assert.ok(ball.z<=previousZ+1e-8,'the net cannot recapture a returning ball');
+  }
   assert.equal(events.filter(type=>type==='sensor').length,1);
   assert.equal(events.filter(type=>type==='return').length,1);
  }
@@ -63,6 +67,24 @@ const {chromium}=require('playwright');
   for(let i=0;i<fps*5;i++){assert.equal(stepBall(ball,1/fps),-1);floorHits+=ball.events.filter(e=>e.type==='floor').length;belowRamp||=ball.h<0;}
   assert.equal(ball.escaped,true);assert.ok(belowRamp);assert.ok(floorHits>=2);assert.ok(ball.floorBounces>=2);
  }
+ // Crossing the rim centre must not award points or snap the sphere's motion.
+ {
+  const ball=makeBall(0,0,280,1),x=hoopWorldX(0)+12;
+  Object.assign(ball,{x,h:physics.RIM_HEIGHT+1,z:1,vx:45,vz:.02,vh:-200});
+  assert.equal(stepBall(ball,1/120),-1);assert.ok(ball.entering);assert.equal(ball.scored,false);
+  assert.ok(Math.abs(ball.x-(x+45/120))<1e-8,'no centring snap');
+  assert.ok(Math.abs(ball.z-(1+.02/120))<1e-8,'depth is preserved');
+  assert.equal(ball.vx,45);assert.equal(ball.vz,.02,'entry keeps lateral momentum');
+  let awards=0;
+  for(let i=0;i<240;i++)if(stepBall(ball,1/240)>=0){awards++;assert.ok(ball.h<physics.RIM_HEIGHT-BALL_RADIUS);}
+  assert.equal(awards,1,'one award after the whole sphere clears');
+ }
+ // The steel lip rejects an off-centre throw consistently, while existing tests
+ // above retain clean swishes and controlled banks at multiple frame rates.
+ for(const fps of [30,60,144]){
+  const miss=flight(makeBall(0,-40,280,1),fps);
+  assert.deepEqual(miss.hits,[]);assert.ok(miss.ball.rimHits>0,'marginal throw rebounds');
+ }
  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH,args:['--no-sandbox']});
  try{
  const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];
@@ -76,7 +98,7 @@ const {chromium}=require('playwright');
  // A ball wholly inside the display bounds must alter its composited pixels.
  // This catches the original HTML-overlay bug, not just a z-index declaration.
  const displayBefore=await page.locator('.scoreboard').screenshot();
- await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=11');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
+ await page.evaluate(async()=>{const {drawBall}=await import('./ball-renderer.mjs?v=13');drawBall(document.querySelector('#court').getContext('2d'),400,400,22,[.45,.2,-.65],{});});
  const displayAfter=await page.locator('.scoreboard').screenshot();
  assert.equal(displayBefore.equals(displayAfter),false,'ball paints in front of scoreboard');
  await page.screenshot({path:'/tmp/hoops-scoreboard-layer.png',fullPage:true});
@@ -128,6 +150,13 @@ const {chromium}=require('playwright');
  await page.screenshot({path:'/tmp/hoops-escape.png',fullPage:true});}
  await page.reload();assert.equal(await score('#best0'),5);await page.clock.runFor(32);await page.screenshot({path:'/tmp/hoops-desktop.png',fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ // Desktop furniture must load, sit beside the court and stay clear of controls.
+ await page.locator('.office-seating').evaluate(el=>el.decode());
+ const room=await page.locator('.office-seating').boundingBox(),machine=await page.locator('.machine').boundingBox(),panel=await page.locator('.panel').boundingBox();
+ assert.ok(room.x>=machine.x+machine.width);
+ assert.ok(panel.x+panel.width<machine.x,'controls leave the scene visible');
+ const backdrop=await page.locator('.court-backdrop').boundingBox(),display=await page.locator('.scoreboard').boundingBox();
+ assert.ok(display.width<backdrop.width*.12,'compact display');
  await page.setViewportSize({width:390,height:844});await page.clock.runFor(32);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'/tmp/hoops-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
  // Actual touch gestures, using the same shot mapping and a high-DPI canvas.
  const mobile=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3,hasTouch:true,isMobile:true});

@@ -4,7 +4,7 @@ export function drawFabricReturn(ctx){
  const point=(u,v)=>{
   const left=47-21*v,width=706+42*v;
   const sag=Math.sin(Math.PI*u)*(8+30*Math.sin(Math.PI*v)+22*v);
-  return [left+width*u,456+460*v+sag];
+  return [left+width*u,456+439*v+sag];
  };
  const line=(points)=>{ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));};
  const edge=[];
@@ -30,17 +30,17 @@ export function drawFabricReturn(ctx){
  }
  // Printed white lane lines follow the cloth's sag and perspective.
  ctx.lineWidth=2.5;ctx.strokeStyle='#e1e4df80';
- for(const centre of [.24,.76]){
-  const points=[];
-  for(let i=0;i<=25;i++)points.push(point(centre-.055-i/25*.035,.14+i/25*.35));
-  for(let i=0;i<=30;i++){const angle=Math.PI-i/30*Math.PI;points.push(point(centre+.09*Math.cos(angle),.49+.09*Math.sin(angle)));}
-  for(let i=25;i>=0;i--)points.push(point(centre+.055+i/25*.035,.14+i/25*.35));
-  line(points);ctx.stroke();
-  for(const side of [-1,1])for(let i=0;i<4;i++){
-   const v=.32+i*.04,u=centre+side*(.055+(v-.14)/.35*.035);
-   line([point(u,v),point(u+side*.014,v)]);ctx.lineWidth=1.8;ctx.stroke();
-  }
- }
+ // One court print across the return, as on the office machine.
+ const centre=.5;
+ const points=[];
+ for(let i=0;i<=25;i++)points.push(point(.31-i/25*.025,.03+i/25*.38));
+ for(let i=0;i<=30;i++){const angle=Math.PI-i/30*Math.PI;points.push(point(centre+.215*Math.cos(angle),.41+.12*Math.sin(angle)));}
+ for(let i=25;i>=0;i--)points.push(point(.69+i/25*.025,.03+i/25*.38));
+ line(points);ctx.stroke();
+ const lane=[point(.40,.04),point(.385,.38),point(.615,.38),point(.60,.04)];line(lane);ctx.stroke();
+ line(Array.from({length:31},(_,i)=>{const a=Math.PI-i/30*Math.PI;return point(.5+.115*Math.cos(a),.38+.075*Math.sin(a));}));ctx.stroke();
+ ctx.setLineDash([3,5]);line(Array.from({length:31},(_,i)=>{const a=Math.PI+i/30*Math.PI;return point(.5+.115*Math.cos(a),.38+.075*Math.sin(a));}));ctx.stroke();ctx.setLineDash([]);
+ for(const side of [-1,1])for(let i=0;i<4;i++){const v=.22+i*.04,u=.5+side*(.1+.015*(v-.04)/.34);line([point(u,v),point(u+side*.017,v)]);ctx.stroke();}
  // Double-stitched hems, with an unmistakably drooping front lip.
  ctx.strokeStyle='#89909644';ctx.lineWidth=1.8;
  for(const u of [.012,.988]){line(Array.from({length:41},(_,i)=>point(u,i/40)));ctx.stroke();}

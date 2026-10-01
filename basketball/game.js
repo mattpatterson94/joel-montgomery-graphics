@@ -3,7 +3,7 @@ import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=13';
 import {drawBall as drawSphere} from './ball-renderer.mjs?v=13';
 import {drawSensorArm} from './sensor.mjs?v=13';
 import {drawFabricReturn} from './fabric.mjs?v=13';
-import {drawSideNet} from './side-net.mjs?v=13';
+import {drawSideNet} from './side-net.mjs?v=14';
 import {drawNet} from './net.mjs?v=13';
 import {CourtAudio} from './sound.mjs?v=13';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
@@ -59,14 +59,14 @@ board.className='court-backdrop';board.setAttribute('aria-hidden','true');
 canvas.before(board);
 const b = board.getContext('2d');
 const resolution=Math.min(devicePixelRatio||1,2);
-canvas.width=board.width=800*resolution;canvas.height=board.height=COURT_HEIGHT*resolution;
-ctx.scale(resolution,resolution);b.scale(resolution,resolution);
+canvas.width=800*resolution;board.width=880*resolution;canvas.height=board.height=COURT_HEIGHT*resolution;
+ctx.scale(resolution,resolution);b.scale(resolution,resolution);b.translate(40,0);
 function path(c, coords, fill, stroke, width=1) {c.beginPath();coords.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(fill){c.closePath();c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 function ellipse(c,x,y,rx,ry,fill,stroke,width=1){c.beginPath();c.ellipse(x,y,rx,ry,0,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=width;c.stroke();}}
 const artwork = new Image();
 artwork.src = new URL('./backboard-reference.png', import.meta.url).href;
 function backboard(){
- b.clearRect(0,0,800,COURT_HEIGHT);
+ b.clearRect(-40,0,880,COURT_HEIGHT);
  // Display the actual left-hand artwork from the supplied reference at its native
  // aspect ratio. Clip the white corners, without redrawing any of the print design.
  if(artwork.complete && artwork.naturalWidth){

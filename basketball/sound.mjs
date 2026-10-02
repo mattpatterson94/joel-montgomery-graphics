@@ -1,7 +1,7 @@
 // Office-machine recordings, with procedural contact fallbacks while loading.
-const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact'],board:['backboard'],start:['round-start'],three:['three-pointer'],countdown:['countdown'],end:['round-end']};
-const ROUND_CUES=new Set(['start','three','countdown','end']);
-const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13,board:.85,start:.9,three:1,countdown:.8,end:.9};
+const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact'],board:['backboard'],start:['round-start'],three:['three-pointer'],countdown:['countdown'],end:['round-end'],score:['score']};
+const ROUND_CUES=new Set(['start','three','countdown','end','score']);
+const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13,board:.85,start:.9,three:1,countdown:.8,end:.9,score:.65};
 export class CourtAudio {
  constructor(context=null){
   this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};
@@ -18,7 +18,7 @@ export class CourtAudio {
   const failed=[...this.files.values()].filter(state=>state==='failed').length;
   const state=this.context?.state||'not created';
   const status=!this.enabled?'off':state==='running'&&this.unlocked?'unlocked':this.priming?'starting':'locked';
-  return `Audio check · v22\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
+  return `Audio check · v23\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
  }
  unlock(fromGesture=false,gesture='interaction'){
   if(!this.enabled)return;
@@ -183,7 +183,11 @@ export class CourtAudio {
     noise(0,.026,2600,.6,'highpass');mode(690,.12,.48);mode(1171,.085,.23);mode(2049,.06,.12);
   }else if(type==='board'){
     noise(0,.018,1700,.8,'highpass');noise(0,.09,520,1.1,'lowpass');mode(138,.085,.5,.82);mode(291,.045,.14);noise(.022,.09,950,.24,'bandpass');
-  }else if(type==='bounce'||type==='floor'){
+  }else if(type==='floor'){
+    // Carpet absorbs the bright slap and ringing: just a short low thud.
+    output.gain.value*=.7;
+    noise(0,.17,190,3.2,'lowpass',.006);
+  }else if(type==='bounce'){
     rubberImpact();
   }else if(type==='swish'||type==='net'){
     const clean=type==='swish';noise(0,clean?.27:.16,clean?1550:1100,clean?.8:.55,'bandpass',.025);

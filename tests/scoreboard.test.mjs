@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {ScoreboardDisplay} from '../basketball/scoreboard.mjs';
+const element={dataset:{}};
+const board=new ScoreboardDisplay(element);
+assert.equal(element.dataset.state,'off');
+board.start();assert.equal(element.dataset.state,'live');
+board.finish(30000);assert.equal(element.dataset.lit,'true');
+board.update(30500);assert.equal(element.dataset.lit,'false');
+board.update(31000);assert.equal(element.dataset.lit,'true');
+board.update(38000);assert.equal(element.dataset.state,'off');
+board.start();board.finish(50000);board.start();board.update(90000);
+assert.equal(element.dataset.state,'live','restarting cancels the final-score timeout');
+const quiet=new ScoreboardDisplay(element,true);quiet.finish(0);quiet.update(500);
+assert.equal(element.dataset.lit,'true','reduced motion holds scores without flashing');
+quiet.update(8000);assert.equal(element.dataset.state,'off');
+console.log('PASS: off/live/final states, eight-second flashing, restart and reduced motion.');

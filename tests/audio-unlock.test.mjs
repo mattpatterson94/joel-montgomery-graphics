@@ -51,7 +51,7 @@ const loading=new CourtAudio({state:'suspended',startRendering(){},decodeAudioDa
  return{};
 }});
 await loading.loadSamples();await loading.loadSamples();
-assert.equal(requests,12);assert.equal(loading.samples.rim.length,1);assert.equal(loading.samples.sensor.length,1);
-assert.match(loading.diagnostics(),/Files: 10\/12 decoded · 2 failed/);
+assert.equal(requests,13);assert.equal(loading.samples.rim.length,1);assert.equal(loading.samples.sensor.length,1);
+assert.match(loading.diagnostics(),/Files: 11\/13 decoded · 2 failed/);
 assert.match(loading.diagnostics(),/sensor-2: EncodingError/);
 console.log('Synchronous gesture activation, interruption recovery, visible errors, effect counters and sample loading checks passed.');

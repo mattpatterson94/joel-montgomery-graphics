@@ -9,6 +9,13 @@
   let model=null, sliced=null, generation=0, previewURL=null, filename='element';
   const node=(tag,attrs={})=>{const el=document.createElementNS(NS,tag);for(const [key,value] of Object.entries(attrs))el.setAttribute(key,value);return el;};
   const mode=()=>document.querySelector('input[name=direction]:checked').value;
+  function normaliseFill(value){
+    const match=value.match(/^rgba?\(\s*([+-]?(?:\d+\.?\d*|\.\d+))\s*(?:,\s*|\s+)([+-]?(?:\d+\.?\d*|\.\d+))\s*(?:,\s*|\s+)([+-]?(?:\d+\.?\d*|\.\d+))(?:\s*(?:,\s*|\/\s*)([+-]?(?:\d+\.?\d*|\.\d+)%?))?\s*\)$/i);
+    if(!match)return {fill:value,alpha:1};
+    const byte=channel=>Math.max(0,Math.min(255,Math.round(Number(channel)))).toString(16).padStart(2,'0').toUpperCase();
+    const alpha=match[4]?(match[4].endsWith('%')?Number(match[4].slice(0,-1))/100:Number(match[4])):1;
+    return {fill:`#${byte(match[1])}${byte(match[2])}${byte(match[3])}`,alpha:Math.max(0,Math.min(1,alpha))};
+  }
   function parse(source){
     if(source.length>5*1024*1024)throw new Error('Please use an SVG smaller than 5 MB.');
     if(/<!ENTITY/i.test(source))throw new Error('SVG entity declarations are not supported.');
@@ -55,7 +62,7 @@
         if(style.stroke!=='none'&&parseFloat(style.strokeWidth)>0&&Number(style.strokeOpacity)>0)throw new Error('Outline strokes before exporting so they can be cut into filled sections.');
         if(style.fill==='none'||Number(style.fillOpacity)===0)return null;
         if(/url\(/i.test(style.fill))throw new Error('Use solid fills; flatten gradients and patterns before converting.');
-        const clean=node(el.localName);
+        const colour=normaliseFill(style.fill),clean=node(el.localName);
         // Resolve SVG lengths in the source viewport, retaining native path curves.
         const attrs={path:['d'],polygon:['points'],polyline:['points'],rect:['x','y','width','height','rx','ry'],circle:['cx','cy','r'],ellipse:['cx','cy','rx','ry']}[el.localName];
         for(const attr of attrs){
@@ -67,7 +74,7 @@
           if(clean.hasAttribute('rx')&&!clean.hasAttribute('ry'))clean.setAttribute('ry',clean.getAttribute('rx'));
           if(clean.hasAttribute('ry')&&!clean.hasAttribute('rx'))clean.setAttribute('rx',clean.getAttribute('ry'));
         }
-        clean.setAttribute('fill',style.fill);clean.setAttribute('fill-rule',style.fillRule);
+        clean.setAttribute('fill',colour.fill);clean.setAttribute('fill-rule',style.fillRule);
         let path=scope.project.importSVG(clean,{insert:false,expandShapes:true,applyMatrix:true});
         if(path instanceof scope.Shape)path=path.toPath(false);
         if(!(path instanceof scope.PathItem))throw new Error('Could not convert a shape into a vector path.');
@@ -78,7 +85,7 @@
         const parts=path.children||[path];for(const part of parts)part.closed=true;
         count++;segments+=parts.reduce((sum,part)=>sum+part.segments.length,0);
         if(count>500||segments>20000)throw new Error('Simplify this artwork: use at most 500 shapes and 20,000 path points.');
-        return {path,fill:style.fill,fillOpacity:Number(style.fillOpacity),opacity:Number(style.opacity)};
+        return {path,fill:colour.fill,fillOpacity:Number(style.fillOpacity)*colour.alpha,opacity:Number(style.opacity)};
       }
       const artwork=read(live);
       if(!artwork||!count)throw new Error('No visible filled vector shapes found.');
@@ -184,4 +191,3 @@
   $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('output').value);status('SVG code copied.');}catch{$('output').closest('details').open=true;$('output').select();status('Select and copy the output code below.');}});
   window.StretchableCreator={inspect,cut,build};
 })();
-

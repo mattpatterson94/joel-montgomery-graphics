@@ -33,8 +33,10 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   const secret=page.locator('a[href="../basketball/"]'),box=await secret.boundingBox();
   assert.equal((await secret.locator('.tool-subtitle').innerText()).trim(),'Hoops of Fun');
   const after=(await page.locator('.card').boundingBox()).height;
-  assert.ok(Math.abs(after-before-box.height-16)<1);assert.ok(during>=before&&during<after);
-  assert.equal(box.x,a.x);assert.ok(Math.abs(box.width-(b.x+b.width-a.x))<1);
+  const last=await cards.last().boundingBox();
+  assert.ok(Math.abs(after-before)<1);assert.ok(Math.abs(during-before)<1);
+  assert.equal(box.x,b.x);assert.equal(box.y,last.y);
+  assert.ok(Math.abs(box.width-last.width)<1);assert.ok(Math.abs(box.height-last.height)<1);
   await page.locator('nav img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
   assert.equal(await page.locator('nav img').count(),6);
   assert.equal(await page.locator('nav img').evaluateAll(imgs=>imgs.every(img=>img.naturalWidth>0)),true);
@@ -48,6 +50,6 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await page.clock.runFor(10001);
   assert.equal(await page.locator('a[href="../basketball/"]').count(),1);
   assert.equal(await page.locator('.secret-reveal').evaluate(el=>el.getAnimations({subtree:true}).length),0);
-  assert.deepEqual(errors,[]);console.log('PASS: two columns, titles, subtitles, icons, 10-second reveal, animated card expansion, full-width bonus, keyboard focus, mobile and reduced motion.',{before,during,after});
+  assert.deepEqual(errors,[]);console.log('PASS: two columns, titles, subtitles, icons, 10-second reveal, equal-size bonus in next column, keyboard focus, mobile and reduced motion.',{before,during,after});
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

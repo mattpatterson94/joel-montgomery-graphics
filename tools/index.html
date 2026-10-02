@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="icon" href="assets/favicon.ico">
-  <link rel="stylesheet" href="styles.css?v=tool-subtitles-1">
+  <link rel="stylesheet" href="styles.css?v=bonus-grid-1">
 </head>
 <body>
   <main class="card">
@@ -37,7 +37,9 @@
       document.querySelector('nav[aria-label="Design utilities"]').append(reveal);
 
       if (animate) {
-        const height = link.getBoundingClientRect().height + parseFloat(getComputedStyle(link).marginTop);
+        const previous = reveal.previousElementSibling.getBoundingClientRect();
+        const sameRow = Math.abs(previous.top - reveal.getBoundingClientRect().top) < 1;
+        const height = Math.max(link.getBoundingClientRect().height, sameRow ? previous.height : 0);
         const expand = reveal.animate(
           [{ height: '0px' }, { height: height + 'px' }],
           { duration: 600, easing: 'cubic-bezier(.22, 1, .36, 1)', fill: 'forwards' }

@@ -5,14 +5,15 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
  try{
   const page=await browser.newPage({viewport:{width:1100,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));await page.goto('http://localhost:8765/tools/');
-  const cards=page.locator('nav > a');assert.equal(await cards.count(),4);
+  const cards=page.locator('nav > a');assert.equal(await cards.count(),5);
   const expected=[
    ['Shape Mask Converter','Create image masks from vector shapes'],
    ['Stretch & Repeat Converter','Repeat a centre section with fixed endcaps'],
    ['Repeating Shape Converter','Turn artwork into a horizontal repeat'],
-   ['Stretchable Shape Converter','Stretch artwork horizontally, vertically or both']
+   ['Stretchable Shape Converter','Stretch artwork horizontally, vertically or both'],
+   ['Trim SVG Contents','Trim empty space from SVG files in bulk']
   ];
-  for(let i=0;i<4;i++){
+  for(let i=0;i<expected.length;i++){
    const card=cards.nth(i);
    assert.equal((await card.locator('.tool-name').innerText()).replace(/\s+/g,' ').trim(),expected[i][0]);
    assert.equal((await card.locator('.tool-subtitle').innerText()).replace(/\s+/g,' ').trim(),expected[i][1]);
@@ -30,12 +31,14 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   // Web Animations use the compositor clock; allow the real 600ms transition to finish.
   await new Promise(resolve=>setTimeout(resolve,750));
   const secret=page.locator('a[href="../basketball/"]'),box=await secret.boundingBox();
-  assert.equal((await secret.locator('.tool-subtitle').innerText()).trim(),'A hidden basketball mini-game');
+  assert.equal((await secret.locator('.tool-subtitle').innerText()).trim(),'Hoops of Fun');
   const after=(await page.locator('.card').boundingBox()).height;
-  assert.ok(Math.abs(after-before-box.height-16)<1);assert.ok(during>=before&&during<after);
-  assert.equal(box.x,a.x);assert.ok(Math.abs(box.width-(b.x+b.width-a.x))<1);
+  const last=await cards.last().boundingBox();
+  assert.ok(Math.abs(after-before)<1);assert.ok(Math.abs(during-before)<1);
+  assert.equal(box.x,b.x);assert.equal(box.y,last.y);
+  assert.ok(Math.abs(box.width-last.width)<1);assert.ok(Math.abs(box.height-last.height)<1);
   await page.locator('nav img').evaluateAll(imgs=>Promise.all(imgs.map(img=>img.decode())));
-  assert.equal(await page.locator('nav img').count(),5);
+  assert.equal(await page.locator('nav img').count(),6);
   assert.equal(await page.locator('nav img').evaluateAll(imgs=>imgs.every(img=>img.naturalWidth>0)),true);
   await page.screenshot({path:'/tmp/tools-after.png',fullPage:true});
   await cards.first().focus();assert.equal(await cards.first().evaluate(el=>getComputedStyle(el).outlineStyle),'solid');
@@ -47,6 +50,6 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await page.clock.runFor(10001);
   assert.equal(await page.locator('a[href="../basketball/"]').count(),1);
   assert.equal(await page.locator('.secret-reveal').evaluate(el=>el.getAnimations({subtree:true}).length),0);
-  assert.deepEqual(errors,[]);console.log('PASS: two columns, titles, subtitles, icons, 10-second reveal, animated card expansion, full-width bonus, keyboard focus, mobile and reduced motion.',{before,during,after});
+  assert.deepEqual(errors,[]);console.log('PASS: two columns, titles, subtitles, icons, 10-second reveal, equal-size bonus in next column, keyboard focus, mobile and reduced motion.',{before,during,after});
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

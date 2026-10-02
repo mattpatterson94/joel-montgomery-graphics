@@ -48,3 +48,17 @@ round cues; missed countdown seconds are never queued for later playback.
 
 Cuts were checked against video frames and waveform/spectral timing. Final
 subjective mix balance still needs an ears-on review on the game preview.
+
+## Scoring beep (October 2026)
+
+`score.wav` is a 28.160–28.550s extract from IMG_0758.mp4, following a basket
+visible around 28 seconds. The recurring narrow tone is approximately 1706 Hz.
+A fourth-order 1450–1950 Hz band-pass suppresses the overlapping ball/arm impact;
+the clip is normalized to 0.8 peak with 8 ms entrance / 45 ms exit fades.
+This is a filtered recording, not a synthesized replacement. Subjective matching
+still needs an ears-on check; selection used frame and spectral evidence.
+
+The beep plays only where points are awarded to a ball from the current live
+round, before the deadline. It never plays for free-play baskets. Sensor and net
+contacts remain separate physical sounds. Carpet (`floor`) collisions now use
+short low-pass noise at 190 Hz rather than the rubber bounce's slap and ringing.

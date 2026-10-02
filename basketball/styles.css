@@ -100,3 +100,11 @@ main{overflow-x:clip}
 /* Temporary mobile audio diagnostics; desktop scene geometry is unchanged. */
 #audio-debug{display:none;white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.65 monospace;color:#c3d5d8;background:#0d1519;border:1px solid #34494e;border-radius:6px;padding:10px;margin:12px 0}
 @media(pointer:coarse),(max-width:1000px){#audio-debug{display:block}}
+
+/* The real display only illuminates during a round or the final-score hold. */
+.scoreboard output { color: #ff534b; }
+.scoreboard[data-state="off"] output,
+.scoreboard[data-state="final"] .clock output,
+.scoreboard[data-state="final"][data-lit="false"] .scores output { visibility: hidden; }
+.scoreboard[data-state="off"] span { color: #655b59; }
+.scoreboard .clock output.urgent { color: #ff534b; }

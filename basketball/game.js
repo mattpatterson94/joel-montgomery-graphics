@@ -1,3 +1,4 @@
+import {ScoreboardDisplay} from './scoreboard.mjs?v=1';
 import {HOOPS, RIM_Y, clamp, remaining, pointsAt, makeBall, stepBall, project, chargePower, rackX, BALL_RADIUS, COURT_HEIGHT, RACK_Y, carpetHeight} from './physics.mjs?v=13';
 import {gestureBall,heldPosition,previewArc} from './gestures.mjs?v=13';
 import {drawBall as drawSphere} from './ball-renderer.mjs?v=13';
@@ -6,7 +7,7 @@ import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
 import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
 import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
-import {CourtAudio} from './sound.mjs?v=22';
+import {CourtAudio} from './sound.mjs?v=23';
 import {RoundAudio} from './round-audio.mjs?v=1';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
@@ -69,6 +70,8 @@ const armReactions=[null,null];
 const netReactions=[null,null],rackOwners=[{},{}];
 let hover=null;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const scoreboard=new ScoreboardDisplay(document.querySelector('.scoreboard'),reducedMotion);
+
 soundButton.addEventListener('click',()=>{
  audio.setEnabled(!audio.enabled);soundButton.textContent=audio.enabled?'Sound on':'Sound off';
  soundButton.setAttribute('aria-pressed',String(audio.enabled));
@@ -133,19 +136,21 @@ function sync(now){
  const secs=running?remaining(deadline,now):0;
  if(running)roundAudio.update(secs);
  if(running&&secs===0){
-  running=false;phase.textContent='FULL TIME';multiplier.textContent='FREE PLAY';audio.play('end',1);
+  running=false;scoreboard.finish(now);phase.textContent='FULL TIME';multiplier.textContent='FREE PLAY';audio.play('end',1);
   const newBest=scores.some((score,i)=>score>best[i]);best=best.map((score,i)=>Math.max(score,scores[i]));
   try{localStorage.setItem('hoops-best',JSON.stringify(best));}catch{}
   stats();message.textContent=`P1: ${scores[0]} · P2: ${scores[1]}.${newBest?' New best!':''} Play again to beat your score.`;
   start.innerHTML='Play again <span>↗</span>';
  }
  timer.value=running?String(Math.ceil(secs)).padStart(2,'0'):round?'00':'30';
+ scoreboard.update(now);
  timer.classList.toggle('urgent',running&&secs<=10);
  if(running){phase.textContent='ROUND LIVE';multiplier.textContent=`${pointsAt(secs)} ${pointsAt(secs)===1?'PT':'PTS'} / BASKET`;}
 }
 start.addEventListener('click',()=>{
  round++;scores=[0,0];[attempts,makes,streaks,rackShots,aim].forEach(list=>list.fill(0));cooldown.fill(-Infinity);
  scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);armReactions.fill(null);drags.clear();keys.clear();accumulator=0;
+ scoreboard.start();
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
  roundAudio.start(deadline);message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
@@ -237,7 +242,8 @@ function frame(now){
   }
   if(lane!==-1){
    let value=0;
-   if(running&&item.round===round){
+   if(running&&item.round===round&&remaining(deadline,now)>0){
+    audio.play('score',1);
     value=pointsAt(remaining(deadline,now));scores[lane]+=value;scoreEls[lane].value=String(scores[lane]).padStart(2,'0');
     // Accuracy belongs to the shooter; points always belong to the actual hoop.
     makes[item.lane]++;streaks[item.lane]++;stats();

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trim SVG Contents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" href="../assets/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="script.js"></script>
+</head>
+<body>
+  <main class="container">
+    <section class="card" aria-labelledby="title">
+      <header><img src="../assets/easilLogo.png" alt="" width="24" height="24"><h1 id="title">Trim SVG Contents</h1></header>
+      <button id="drop-area" type="button"><span>Click or drop SVG files here</span><small>Trim and download automatically</small></button>
+      <input id="file-input" type="file" accept=".svg,image/svg+xml" multiple hidden>
+      <p id="status" role="status" aria-live="polite"></p>
+      <p id="download-note" hidden>Your browser may ask to allow multiple downloads. You can also save each file using its Download link.</p>
+      <ul id="results" aria-label="File results"></ul>
+      <button id="clear" type="button" hidden>Clear results</button>
+    </section>
+    <p class="info">Removes transparent space around visible artwork, including clipped and masked shapes. Files remain SVGs. White backgrounds are kept.</p>
+    <nav aria-label="Design utilities"><a href="../">All utilities</a></nav>
+  </main>
+</body>
+</html>

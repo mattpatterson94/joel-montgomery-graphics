@@ -6,7 +6,8 @@ import {drawFabricReturn,fabricImpact,fabricMoving} from './fabric.mjs?v=16';
 import {RETURN_FRONT_LEFT as frontLeft,RETURN_FRONT_RIGHT as frontRight} from './machine-geometry.mjs?v=16';
 import {drawSideNet} from './side-net.mjs?v=16';
 import {drawNet} from './net.mjs?v=13';
-import {CourtAudio} from './sound.mjs?v=21';
+import {CourtAudio} from './sound.mjs?v=22';
+import {RoundAudio} from './round-audio.mjs?v=1';
 const canvas = document.querySelector('#court'), ctx = canvas.getContext('2d');
 // Anchor the room to the actual court bounds, including on ultrawide screens.
 // The mural ends outside the machine instead of using a viewport percentage.
@@ -47,6 +48,8 @@ const aim=[0,0], rackShots=[0,0], attempts=[0,0], makes=[0,0], streaks=[0,0];
 let best=[0,0];
 try {const saved=JSON.parse(localStorage.getItem('hoops-best')||'[0,0]');if(Array.isArray(saved))best=[0,1].map(i=>Number.isFinite(saved[i])?Math.max(0,saved[i]):0);}catch{}
 const audio=new CourtAudio();
+audio.preload();
+const roundAudio=new RoundAudio(audio);
 // Touch activation is granted on completion, not touchstart. Use the same
 // synchronous unlock as the working Test sound button, including after a swipe.
 // Pointer capture keeps a ball's pointerup in this game even outside the canvas.
@@ -128,8 +131,9 @@ function shoot(item){
 }
 function sync(now){
  const secs=running?remaining(deadline,now):0;
+ if(running)roundAudio.update(secs);
  if(running&&secs===0){
-  running=false;phase.textContent='FULL TIME';multiplier.textContent='FREE PLAY';audio.play('end',.7);
+  running=false;phase.textContent='FULL TIME';multiplier.textContent='FREE PLAY';audio.play('end',1);
   const newBest=scores.some((score,i)=>score>best[i]);best=best.map((score,i)=>Math.max(score,scores[i]));
   try{localStorage.setItem('hoops-best',JSON.stringify(best));}catch{}
   stats();message.textContent=`P1: ${scores[0]} · P2: ${scores[1]}.${newBest?' New best!':''} Play again to beat your score.`;
@@ -143,7 +147,7 @@ start.addEventListener('click',()=>{
  round++;scores=[0,0];[attempts,makes,streaks,rackShots,aim].forEach(list=>list.fill(0));cooldown.fill(-Infinity);
  scoreEls.forEach(el=>el.value='00');balls=[];flashes=[];netReactions.fill(null);armReactions.fill(null);drags.clear();keys.clear();accumulator=0;
  deadline=performance.now()+30000;running=true;start.innerHTML='Restart round <span>↗</span>';
- audio.unlock(true,'start button');message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
+ roundAudio.start(deadline);message.textContent='Drag up towards a hoop and release. Adjust for each new ball position.';stats();sync(performance.now());
 });
 function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*800/r.width,y:(e.clientY-r.top)*COURT_HEIGHT/r.height};}
 function laneBusy(lane){return [...drags.values()].some(d=>d.lane===lane)||keys.has(lane?'arrowup':'w');}

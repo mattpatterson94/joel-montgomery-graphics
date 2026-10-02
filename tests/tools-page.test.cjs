@@ -6,8 +6,19 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   const page=await browser.newPage({viewport:{width:1100,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.clock.install({time:new Date('2026-01-01T00:00:00Z')});await page.clock.pauseAt(new Date('2026-01-01T00:00:01Z'));await page.goto('http://localhost:8765/tools/');
   const cards=page.locator('nav > a');assert.equal(await cards.count(),4);
-  const expected=['Shape Mask Converter','Stretch & Repeat Converter','Repeating Shape Converter','Stretchable Shape Converter'];
-  for(let i=0;i<4;i++)assert.equal((await cards.nth(i).innerText()).replace(/\s+/g,' ').trim(),expected[i]);
+  const expected=[
+   ['Shape Mask Converter','Create image masks from vector shapes'],
+   ['Stretch & Repeat Converter','Repeat a centre section with fixed endcaps'],
+   ['Repeating Shape Converter','Turn artwork into a horizontal repeat'],
+   ['Stretchable Shape Converter','Stretch artwork horizontally, vertically or both']
+  ];
+  for(let i=0;i<4;i++){
+   const card=cards.nth(i);
+   assert.equal((await card.locator('.tool-name').innerText()).replace(/\s+/g,' ').trim(),expected[i][0]);
+   assert.equal((await card.locator('.tool-subtitle').innerText()).replace(/\s+/g,' ').trim(),expected[i][1]);
+   const cardBox=await card.boundingBox(),subtitleBox=await card.locator('.tool-subtitle').boundingBox();
+   assert.ok(subtitleBox.y>=cardBox.y&&subtitleBox.y+subtitleBox.height<=cardBox.y+cardBox.height);
+  }
   const a=await cards.nth(0).boundingBox(),b=await cards.nth(1).boundingBox(),c=await cards.nth(2).boundingBox();
   assert.equal(a.y,b.y);assert.ok(b.x>a.x);assert.equal(a.x,c.x);assert.ok(c.y>a.y);
   const before=(await page.locator('.card').boundingBox()).height;
@@ -19,6 +30,7 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   // Web Animations use the compositor clock; allow the real 600ms transition to finish.
   await new Promise(resolve=>setTimeout(resolve,750));
   const secret=page.locator('a[href="../basketball/"]'),box=await secret.boundingBox();
+  assert.equal((await secret.locator('.tool-subtitle').innerText()).trim(),'A hidden basketball mini-game');
   const after=(await page.locator('.card').boundingBox()).height;
   assert.ok(Math.abs(after-before-box.height-16)<1);assert.ok(during>=before&&during<after);
   assert.equal(box.x,a.x);assert.ok(Math.abs(box.width-(b.x+b.width-a.x))<1);
@@ -35,6 +47,6 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   await page.emulateMedia({reducedMotion:'reduce'});await page.reload();await page.clock.runFor(10001);
   assert.equal(await page.locator('a[href="../basketball/"]').count(),1);
   assert.equal(await page.locator('.secret-reveal').evaluate(el=>el.getAnimations({subtree:true}).length),0);
-  assert.deepEqual(errors,[]);console.log('PASS: two columns, titles, icons, 10-second reveal, animated card expansion, full-width bonus, keyboard focus, mobile and reduced motion.',{before,during,after});
+  assert.deepEqual(errors,[]);console.log('PASS: two columns, titles, subtitles, icons, 10-second reveal, animated card expansion, full-width bonus, keyboard focus, mobile and reduced motion.',{before,during,after});
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

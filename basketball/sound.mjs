@@ -1,9 +1,11 @@
-// Recorded office-machine contacts, with procedural net/board sounds and loading fallback.
-const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact']};
-const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13};
+// Office-machine recordings, with procedural contact fallbacks while loading.
+const RECORDINGS={rim:['rim-1','rim-2'],sensor:['sensor-1','sensor-2'],return:['return-1','return-2'],bounce:['fabric-impact'],board:['backboard'],start:['round-start'],three:['three-pointer'],countdown:['countdown'],end:['round-end']};
+const ROUND_CUES=new Set(['start','three','countdown','end']);
+const LEVELS={rim:.65,sensor:.7,return:.08,bounce:.13,board:.85,start:.9,three:1,countdown:.8,end:.9};
 export class CourtAudio {
  constructor(context=null){
   this.context=context;this.enabled=true;this.last=new Map();this.voices=0;this.samples={};this.variants={};
+  this.roundSources=new Set();this.preloaded=new Map();
   this.files=new Map();this.requested=0;this.scheduled=0;this.finished=0;
   this.lastEffect='none';this.lastPlayback='none';this.lastGesture='none';this.lastError='none';
   this.unlocked=false;this.priming=false;this.onchange=null;
@@ -16,7 +18,7 @@ export class CourtAudio {
   const failed=[...this.files.values()].filter(state=>state==='failed').length;
   const state=this.context?.state||'not created';
   const status=!this.enabled?'off':state==='running'&&this.unlocked?'unlocked':this.priming?'starting':'locked';
-  return `Audio check · v21\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
+  return `Audio check · v22\nAudio: ${status}\nContext: ${state} · time ${this.context?.currentTime?.toFixed(2)||'0.00'}s\nGesture: ${this.lastGesture}\nFiles: ${loaded}/${total} decoded · ${failed} failed${this.loadingDone?'':this.loading?' · loading':' · not requested'}\nEffects: ${this.requested} requested · ${this.scheduled} scheduled · ${this.finished} finished\nLast effect: ${this.lastEffect} · ${this.lastPlayback}\nLast error: ${this.lastError}`;
  }
  unlock(fromGesture=false,gesture='interaction'){
   if(!this.enabled)return;
@@ -55,10 +57,16 @@ export class CourtAudio {
  }
  setEnabled(enabled,gesture='sound button'){
   this.enabled=enabled;
+  if(!enabled)this.stopRoundCues();
   if(enabled)this.unlock(true,gesture);
   this.notify();
  }
+ stopRoundCues(){
+  for(const source of this.roundSources){try{source.stop();}catch{}}
+  this.roundSources.clear();
+ }
  pause(){
+  this.stopRoundCues();
   if(this.context?.state==='running'&&typeof this.context.startRendering!=='function'){
    this.context.suspend().catch(error=>this.error('suspend',error));
   }
@@ -75,16 +83,25 @@ export class CourtAudio {
   }catch(error){this.error('test',error);throw error;}
   finally{clearTimeout(timer);}
  }
+ preload(){
+  // Fetch bytes ahead of the first click without creating an AudioContext.
+  for(const name of Object.values(RECORDINGS).flat()){
+   if(!this.preloaded.has(name))this.preloaded.set(name,fetch(new URL(`./audio/${name}.wav`,import.meta.url))
+    .then(response=>{if(!response.ok)throw new Error(`HTTP ${response.status}`);return response.arrayBuffer();})
+    .then(buffer=>({buffer}),error=>({error})));
+  }
+ }
  async loadSamples(){
   if(!this.context)return;
   if(this.loading)return this.loading;
+  this.preload();
   this.loading=Promise.all(Object.entries(RECORDINGS).map(async([type,names])=>{
    const buffers=await Promise.all(names.map(async name=>{
     this.files.set(name,'loading');
     try{
-     const response=await fetch(new URL(`./audio/${name}.wav`,import.meta.url));
-     if(!response.ok)throw new Error(`HTTP ${response.status}`);
-     const buffer=await this.context.decodeAudioData(await response.arrayBuffer());
+     const loaded=await this.preloaded.get(name);
+     if(loaded.error)throw loaded.error;
+     const buffer=await this.context.decodeAudioData(loaded.buffer);
      this.files.set(name,'decoded');this.notify();return buffer;
     }catch(error){this.files.set(name,'failed');this.error(name,error);return null;}
    }));
@@ -155,7 +172,7 @@ export class CourtAudio {
   if(clips?.length){
     const index=this.variants[type]??0;this.variants[type]=index+1;
     const source=ctx.createBufferSource();source.buffer=clips[index%clips.length];
-    source.playbackRate.value=1+(Math.random()-.5)*(type==='sensor'?.02:.05);
+    source.playbackRate.value=ROUND_CUES.has(type)?1:1+(Math.random()-.5)*(type==='sensor'?.02:.05);
     output.gain.value=.28*LEVELS[type]*Math.max(.1,Math.min(1,strength));
     source.connect(output);source.start(now);nodes.push(source);sources.push(source);
   }else if(type==='sensor'){
@@ -175,13 +192,16 @@ export class CourtAudio {
     for(let i=0;i<3;i++)noise(.035+i*.037+Math.random()*.01,.025,1800+Math.random()*1200,.09,'bandpass',.004);
   }else if(type==='release'){
     noise(0,.06,900,.2,'bandpass',.01);
+  }else if(type==='countdown'){
+    mode(800,.15,.5);
   }else if(type==='end'){
     // A short machine-style end cue; basket sounds never use this oscillator.
     mode(92,.22,.5,.8);mode(92,.2,.4,.8,.19);
   }
   let left=sources.length;
   if(left){this.scheduled++;this.lastPlayback=clips?.length?'recording scheduled':'generated sound scheduled';}
-  const cleanup=()=>{if(--left===0){nodes.forEach(node=>node.disconnect());this.voices--;this.finished++;this.notify();}};
+  if(ROUND_CUES.has(type))sources.forEach(source=>this.roundSources.add(source));
+  const cleanup=()=>{if(--left===0){sources.forEach(source=>this.roundSources.delete(source));nodes.forEach(node=>node.disconnect());this.voices--;this.finished++;this.notify();}};
   if(!left){nodes.forEach(node=>node.disconnect());this.voices--;}
   else sources.forEach(source=>source.onended=cleanup);
  }
